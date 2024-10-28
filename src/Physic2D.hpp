@@ -1,10 +1,8 @@
 #ifndef PHYSIC2D_HPP
 #define PHYSIC2D_HPP
 
-#include "CustomClasses.hpp"
+#include "Core.hpp"
 #include "Global.hpp"
-
-
 class Rigidbody2D : public Component {
 private:
     Vector2 acceleration;

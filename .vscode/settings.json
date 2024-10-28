@@ -44,5 +44,6 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "list": "cpp"
-    }
+    },
+    "makefile.makePath": "mingw32-make"
 }

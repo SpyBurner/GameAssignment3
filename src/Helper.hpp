@@ -2,7 +2,7 @@
 #define HELPER_HPP
 
 #include "Global.hpp"
-#include "CustomClasses.hpp"
+#include "Core.hpp"
 #include "Physic2D.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
