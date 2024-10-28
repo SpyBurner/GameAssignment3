@@ -88,7 +88,7 @@ void Game::objectInit() {
 #pragma region Ball Setup
         GameObject *ball = new GameObject("Ball");
         ball->tag = 3;
-        ball->transform.position = Vector2(640, 360);
+        ball->transform.position = Vector2(100, 600);
         ball->transform.scale = Vector2(2, 2);
 
         ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), 10, LoadSpriteSheet("Assets/default.png")));
@@ -96,15 +96,42 @@ void Game::objectInit() {
         ball->AddComponent(new Animator(ball, {AnimationClip("Roll", "Assets/soccer_ball.png", Vector2(15, 15), 1000, true, 1.0, 0, 1)}));
         ball->GetComponent<Animator>()->Play("Roll");
 
-        ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, .9));
+        ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, .9, 1.0));
+        ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(1, 1) * 100);
 
         ball->AddComponent(new VelocityToAnimSpeedController(ball, "Roll"));
         ball->AddComponent(new StayInBounds(ball, false));
 
         ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5));
 
+        ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([ball](Collider2D *collider) {
+            Rigidbody2D *rb = ball->GetComponent<Rigidbody2D>();
+            ball->transform.position += rb->velocity * -1;
+            // rb->BounceOff(collider->GetNormal(ball->transform.position));
+        });
+
         GameObjectManager::GetInstance()->AddGameObject(ball);
 #pragma endregion
+
+#pragma region Wall Setup
+        GameObject *wall = new GameObject("Wall");
+        wall->tag = 2;
+        wall->transform.rotation = 0;
+        wall->transform.position = Vector2(640, 700);
+        wall->transform.scale = Vector2(100, 1);
+
+        wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+
+        wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(1500, 32)));
+
+        wall->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([wall](Collider2D *collider) {
+            Rigidbody2D *rb = collider->gameObject->GetComponent<Rigidbody2D>();
+            rb->BounceOff(wall->GetComponent<BoxCollider2D>()->GetNormal(collider->gameObject->transform.position));
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(wall);
+#pragma endregion
+    
     });
     SceneManager::GetInstance()->AddScene(gameScene);
     SceneManager::GetInstance()->LoadScene("Game");

@@ -18,5 +18,6 @@ const bool FULLSCREEN = false;
 
 #define VELOCITY_EPS 0.01
 #define EPS 0.0001
+#define GRAVITY_ACCELERATION 2.0f
 
 #endif // GLOBALS_HPP
