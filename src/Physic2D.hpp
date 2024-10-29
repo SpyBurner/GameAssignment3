@@ -1,19 +1,17 @@
 #ifndef PHYSIC2D_HPP
 #define PHYSIC2D_HPP
 
-#include "CustomClasses.hpp"
+#include "Core.hpp"
 #include "Global.hpp"
-
-
 class Rigidbody2D : public Component {
 private:
     Vector2 acceleration;
     float mass, drag, bounciness;
-
+    float gravityScale;
 public:
     Vector2 velocity;
 
-    Rigidbody2D(GameObject *parent, float mass, float drag, float bounciness);
+    Rigidbody2D(GameObject *parent, float mass, float drag, float bounciness, float gravityScale);
     ~Rigidbody2D();
 
     void Update();
