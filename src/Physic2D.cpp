@@ -50,9 +50,9 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
     }
     
     this->acceleration = Vector2(0, 0);
-    // if (velocity.Magnitude() < 0.01f) {
-    //     velocity = velocity.Normalize();
-    // }
+    if (velocity.Magnitude() < 0.01f) {
+        velocity = normal * 2.0f;
+    }
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
 }
 
@@ -74,12 +74,28 @@ Component *Rigidbody2D::Clone(GameObject *parent) {
 #pragma region Collider2D
 
 // Collider2D Implementation
-Collider2D::Collider2D(GameObject *parent, Vector2 offset) : Component(parent) {
+Collider2D::Collider2D(GameObject *parent, Vector2 offset, bool isTrigger) : Component(parent) {
     this->offset = offset;
     CollisionManager::GetInstance()->AddCollider(this);
+
+    this->isTrigger = isTrigger;
+    if (!isTrigger){
+        this->OnCollisionEnter.addHandler([this](Collider2D *collider){
+            defaultCollision(collider);
+        });
+    }
+}
+
+void Collider2D::defaultCollision(Collider2D *other){
+    if (!this->isTrigger && !other->isTrigger) {
+        Vector2 normal = other->GetNormal(this->gameObject->transform.position + this->offset);
+        this->gameObject->transform.position = this->gameObject->transform.position + normal * 0.1f; // Adjust the position slightly to prevent overlap
+        this->gameObject->GetComponent<Rigidbody2D>()->BounceOff(normal);
+    }
 }
 
 Collider2D::~Collider2D() {
+    CollisionManager::GetInstance()->RemoveCollider(this);
 }
 
 void Collider2D::Update() {}
@@ -99,6 +115,10 @@ CollisionManager *CollisionManager::GetInstance() {
     return instance;
 }
 
+CollisionManager::~CollisionManager() {
+    this->Clear();
+}
+
 void CollisionManager::AddCollider(Collider2D *collider) {
     this->colliders.push_back(collider);
 }
@@ -106,6 +126,7 @@ void CollisionManager::AddCollider(Collider2D *collider) {
 void CollisionManager::RemoveCollider(Collider2D *collider) {
     for (int i = 0; i < this->colliders.size(); i++) {
         if (this->colliders[i] == collider) {
+            std::cout<<"Collider removed"<<std::endl;
             this->colliders.erase(this->colliders.begin() + i);
             return;
         }
@@ -113,12 +134,13 @@ void CollisionManager::RemoveCollider(Collider2D *collider) {
 }
 
 void CollisionManager::Update() {
+
     for (auto &collider1 : this->colliders) {
         if (!collider1->enabled) {
             continue;
         }
         for (auto &collider2 : this->colliders) {
-            if (collider1->gameObject->GetName() == collider2->gameObject->GetName() || !collider2->enabled) {
+            if (&collider1 == &collider2 || !collider2->enabled) {
                 continue;
             }
 
@@ -135,7 +157,7 @@ void CollisionManager::Clear() {
 }
 
 // CircleCollider2D Implementation
-CircleCollider2D::CircleCollider2D(GameObject *parent, Vector2 offset, float radius) : Collider2D(parent, offset) {
+CircleCollider2D::CircleCollider2D(GameObject *parent, Vector2 offset, float radius, bool isTrigger) : Collider2D(parent, offset, isTrigger) {
     this->radius = radius;
 }
 
@@ -146,7 +168,7 @@ void CircleCollider2D::SetRadius(float radius){
 }
 
 Component *CircleCollider2D::Clone(GameObject *parent) {
-    CircleCollider2D *newCollider = new CircleCollider2D(parent, this->offset, this->radius);
+    CircleCollider2D *newCollider = new CircleCollider2D(parent, this->offset, this->radius, this->isTrigger);
     return newCollider;
 }
 
@@ -181,7 +203,7 @@ Vector2 CircleCollider2D::GetNormal(Vector2 point) {
 }
 
 // BoxCollider2D Implementation
-BoxCollider2D::BoxCollider2D(GameObject *parent, Vector2 offset, Vector2 size) : Collider2D(parent, offset) {
+BoxCollider2D::BoxCollider2D(GameObject *parent, Vector2 offset, Vector2 size, bool isTrigger) : Collider2D(parent, offset, isTrigger) {
     this->size = size;
 }
 
@@ -192,7 +214,7 @@ void BoxCollider2D::SetSize(Vector2 size) {
 }
 
 Component *BoxCollider2D::Clone(GameObject *parent) {
-    BoxCollider2D *newCollider = new BoxCollider2D(parent, this->offset, this->size);
+    BoxCollider2D *newCollider = new BoxCollider2D(parent, this->offset, this->size, this->isTrigger);
     return newCollider;
 }
 

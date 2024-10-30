@@ -104,14 +104,14 @@ public:
 
     void Update(){
         if (rigidbody == nullptr || spRenderer == nullptr){
-            std::cout << "HUH" << '\n';
-            return;
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+            spRenderer = gameObject->GetComponent<SpriteRenderer>();
+            if (rigidbody == nullptr || spRenderer == nullptr) return;
         }
         
         if (fabs(rigidbody->velocity.x) < VELOCITY_EPS) return;
         
         spRenderer->isFlipped = Vector2::Dot(rigidbody->velocity, origin) < 0;
-        std::cout << "Should be flipping" << spRenderer->isFlipped << '\n';
     }
 
     void Draw(){}
@@ -120,6 +120,63 @@ public:
         FLipToVelocity *newFlipToVelocity = new FLipToVelocity(parent, origin);
         return newFlipToVelocity;
     }
+};
+
+
+
+class AutoDestroy : public Component {
+private:
+    float timeToDestroy;
+    float startTime;
+public:
+    AutoDestroy(GameObject *parent, float timeToDestroy) : Component(parent){
+        this->timeToDestroy = timeToDestroy;
+        this->startTime = SDL_GetTicks();
+    }
+
+    void Update(){
+        if (SDL_GetTicks() - startTime > timeToDestroy){
+            std::cout << "Destroyed " << gameObject->GetName() << std::endl;
+            GameObject::Destroy(gameObject->GetName());
+        }
+    }
+
+    void Draw(){}
+
+    Component *Clone(GameObject *parent){
+        AutoDestroy *newAutoDestroy = new AutoDestroy(parent, timeToDestroy);
+        return newAutoDestroy;
+    }
+};
+
+class SpawnBall : public Component {
+private:
+    GameObject *ballPrefab;
+    SDL_KeyCode spawnKey;
+public:
+    SpawnBall(GameObject *parent, GameObject *ballPrefab, SDL_KeyCode spawnKey) : Component(parent){
+        this->ballPrefab = ballPrefab;
+        this->spawnKey = spawnKey;
+    }
+
+    void Update(){
+        if (Game::event.type == SDL_KEYDOWN){
+            if (Game::event.key.keysym.sym == spawnKey){
+                GameObject *ball = GameObject::Instantiate("Ball" + std::to_string(rand() + rand()), ballPrefab, gameObject->transform.position, 
+                                    ballPrefab->transform.rotation, ballPrefab->transform.scale);
+                ball->AddComponent(new AutoDestroy(ball, 3000));
+                GameObjectManager::GetInstance()->AddGameObject(ball);
+            }
+        }
+    }
+
+    void Draw(){}
+
+    Component *Clone(GameObject *parent){
+        SpawnBall *newSpawnBall = new SpawnBall(parent, ballPrefab, spawnKey);
+        return newSpawnBall;
+    }
+
 };
 
 #endif

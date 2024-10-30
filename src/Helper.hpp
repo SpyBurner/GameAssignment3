@@ -109,7 +109,6 @@ public:
 
     void Update() {
         Rigidbody2D *rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
-        bool bounced = false;
         if (this->gameObject->transform.position.x < 0) {
             if (teleport){
                 this->gameObject->transform.position.x = WIDTH;
@@ -117,7 +116,6 @@ public:
             else{
                 if (rigidbody != nullptr){
                     rigidbody->BounceOff(Vector2(1, 0));
-                    bounced = true;
                 }
                 else
                     this->gameObject->transform.position.x = 0;
@@ -130,7 +128,6 @@ public:
             else{
                 if (rigidbody != nullptr){
                     rigidbody->BounceOff(Vector2(-1, 0));
-                    bounced = true;
                 }
                 else
                     this->gameObject->transform.position.x = WIDTH;
@@ -143,7 +140,6 @@ public:
             else{
                 if (rigidbody != nullptr){
                     rigidbody->BounceOff(Vector2(0, 1));
-                    bounced = true;
                 }
                 else
                     this->gameObject->transform.position.y = 0;
@@ -156,14 +152,10 @@ public:
             else{
                 if (rigidbody != nullptr){
                     rigidbody->BounceOff(Vector2(0, -1));
-                    bounced = true;
                 }
                 else
                     this->gameObject->transform.position.y = HEIGHT;
             }
-        }
-        if (bounced){
-            SoundManager::GetInstance()->PlaySound("ball_bounce");
         }
     }
 

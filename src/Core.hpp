@@ -245,7 +245,6 @@ T *GameObject::GetComponent() {
     return nullptr;
 }
 
-// More like a template for the GameObjectManager
 class Scene {
 private:
     std::string name;

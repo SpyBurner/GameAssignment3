@@ -159,8 +159,14 @@ void GameObjectManager::Clear() {
 }
 
 void GameObjectManager::Update() {
+    //Copy to allow deletion during traversal
+    std::vector<GameObject*> objectsToUpdate;
     for (auto &pair : gameObjects) {
-        pair.second->Update();
+        objectsToUpdate.push_back(pair.second);
+    }
+
+    for (auto &gameObject : objectsToUpdate) {
+        gameObject->Update();
     }
 }
 
@@ -215,7 +221,8 @@ GameObject::GameObject(std::string name) {
 
 GameObject::~GameObject() {
     for (auto &component : components) {
-        delete component;
+        if (component)
+            delete component;
     }
     components.clear();
 }
