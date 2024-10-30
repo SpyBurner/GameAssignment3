@@ -105,6 +105,14 @@ float Vector2::SignedAngle(Vector2 v1, Vector2 v2) {
     return angle * (180.0f / M_PI); // Convert radians to degrees
 }
 
+Vector2 Vector2::ProjectToVector(Vector2 v, Vector2 onto){
+    return onto * (v.Dot(onto) / onto.Magnitude());
+}
+
+Vector2 Vector2::ProjectToPlane(Vector2 v, Vector2 normal){
+    return v - ProjectToVector(v, normal);
+}
+
 #pragma endregion
 
 #pragma region GameObjectManager

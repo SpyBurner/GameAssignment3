@@ -122,7 +122,7 @@ void Game::objectInit() {
 
         wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
 
-        wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(1500, 60), true));
+        wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(1500, 60), false));
 
         // wall->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([wall](Collider2D *collider) {
         //     // rb->BounceOff(wall->GetComponent<BoxCollider2D>()->GetNormal(collider->gameObject->transform.position));
@@ -160,11 +160,11 @@ void Game::objectInit() {
 
         player->AddComponent(new CircleCollider2D(player, Vector2(0, 0), 37, true));
 
-        player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
-            Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
-            // player->transform.position += rb->velocity * -1;
-            rb->BounceOff(collider->GetNormal(player->transform.position));
-        });
+        // player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
+        //     Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
+        //     // player->transform.position += rb->velocity * -1;
+        //     rb->BounceOff(collider->GetNormal(player->transform.position));
+        // });
 
         player->AddComponent(new SpawnBall(player, ball, SDLK_SPACE));
 

@@ -7,8 +7,8 @@ class Rigidbody2D : public Component {
 private:
     Vector2 acceleration;
     float mass, drag, bounciness;
-    float gravityScale;
 public:
+    float gravityScale;
     Vector2 velocity;
 
     Rigidbody2D(GameObject *parent, float mass, float drag, float bounciness, float gravityScale);

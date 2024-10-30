@@ -84,6 +84,9 @@ public:
     static float Angle(Vector2 v1, Vector2 v2);
 
     static float SignedAngle(Vector2 v1, Vector2 v2);
+
+    static Vector2 ProjectToVector(Vector2 v, Vector2 onto);
+    static Vector2 ProjectToPlane(Vector2 v, Vector2 normal);
 };
 
 Vector2 operator*(float f, Vector2 v);

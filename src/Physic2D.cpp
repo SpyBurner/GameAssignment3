@@ -86,11 +86,21 @@ Collider2D::Collider2D(GameObject *parent, Vector2 offset, bool isTrigger) : Com
     }
 }
 
-void Collider2D::defaultCollision(Collider2D *other){
-    if (!this->isTrigger && !other->isTrigger) {
-        Vector2 normal = other->GetNormal(this->gameObject->transform.position + this->offset);
-        this->gameObject->transform.position = this->gameObject->transform.position + normal * 0.1f; // Adjust the position slightly to prevent overlap
-        this->gameObject->GetComponent<Rigidbody2D>()->BounceOff(normal);
+void Collider2D::defaultCollision(Collider2D *other) {
+    Rigidbody2D *rb = other->gameObject->GetComponent<Rigidbody2D>();
+
+    if (rb != nullptr) {
+        Vector2 normal = this->GetNormal(other->gameObject->transform.position + other->offset);
+
+        // Project velocity onto the collision normal
+        Vector2 projected = Vector2::ProjectToVector(rb->velocity, normal);
+        if (Vector2::Dot(projected, normal) < 0) {
+            other->gameObject->transform.position += projected * -1;
+            rb->velocity = rb->velocity - projected;
+            if (normal == Vector2(0, 1)) {
+                rb->velocity = rb->velocity + Vector2(0, -1) * rb->gravityScale * GRAVITY_ACCELERATION;
+            }
+        }
     }
 }
 
