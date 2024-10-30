@@ -315,7 +315,7 @@ void SpriteRenderer::Draw() {
 
     // Copy the sprite to the renderer
     // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
-    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, (isFlipped)? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {

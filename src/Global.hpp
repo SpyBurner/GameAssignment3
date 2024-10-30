@@ -16,8 +16,8 @@ const int WIDTH = 1280, HEIGHT = 720;
 // const int WIDTH = 1920, HEIGHT = 1080;
 const bool FULLSCREEN = false;
 
-#define VELOCITY_EPS 0.01
-#define EPS 0.0001
+#define VELOCITY_EPS 0.01f
+#define EPS 0.0001f
 #define GRAVITY_ACCELERATION 2.0f
 
 #endif // GLOBALS_HPP

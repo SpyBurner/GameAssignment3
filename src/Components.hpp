@@ -88,4 +88,38 @@ public:
     }
 };
 
+class FLipToVelocity : public Component{
+private:
+    SpriteRenderer *spRenderer = nullptr;
+    Rigidbody2D *rigidbody = nullptr;
+
+    Vector2 origin;
+public:
+    FLipToVelocity(GameObject *parent, Vector2 origin) : Component(parent){
+        rigidbody = parent->GetComponent<Rigidbody2D>();
+        spRenderer = parent->GetComponent<SpriteRenderer>();
+
+        this->origin = origin;
+    }
+
+    void Update(){
+        if (rigidbody == nullptr || spRenderer == nullptr){
+            std::cout << "HUH" << '\n';
+            return;
+        }
+        
+        if (fabs(rigidbody->velocity.x) < VELOCITY_EPS) return;
+        
+        spRenderer->isFlipped = Vector2::Dot(rigidbody->velocity, origin) < 0;
+        std::cout << "Should be flipping" << spRenderer->isFlipped << '\n';
+    }
+
+    void Draw(){}
+
+    Component *Clone(GameObject *parent){
+        FLipToVelocity *newFlipToVelocity = new FLipToVelocity(parent, origin);
+        return newFlipToVelocity;
+    }
+};
+
 #endif

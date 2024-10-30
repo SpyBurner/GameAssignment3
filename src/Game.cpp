@@ -131,7 +131,39 @@ void Game::objectInit() {
 
         GameObjectManager::GetInstance()->AddGameObject(wall);
 #pragma endregion
-    
+
+#pragma region Player Setup
+
+        GameObject *player = new GameObject("Player");
+        player->tag = 1;
+        player->transform.position = Vector2(640, 100);
+        player->transform.scale = Vector2(2, 2);
+
+        player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, LoadSpriteSheet("Assets/default.png")));
+
+        player->AddComponent(new Animator(player, {AnimationClip("Idle", "Assets/kirby_float.png", Vector2(35, 37), 1000, true, 1.0, 0, 4)}));
+        player->GetComponent<Animator>()->Play("Idle");
+
+        player->AddComponent(new Rigidbody2D(player, 1, 0.025, .9, 0.0));
+
+        player->AddComponent(new VelocityToAnimSpeedController(player, "Idle"));
+        player->AddComponent(new StayInBounds(player, false));
+        player->AddComponent(new FLipToVelocity(player, Vector2(1, 0)));
+
+        player->AddComponent(new MovementController(player, 18, true));
+
+        player->AddComponent(new CircleCollider2D(player, Vector2(0, 0), 7.5));
+
+        player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
+            Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
+            // player->transform.position += rb->velocity * -1;
+            rb->BounceOff(collider->GetNormal(player->transform.position));
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(player);
+
+#pragma endregion
+
     });
     SceneManager::GetInstance()->AddScene(gameScene);
     SceneManager::GetInstance()->LoadScene("Game");
