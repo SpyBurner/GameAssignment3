@@ -56,6 +56,12 @@ Vector2 Vector2::operator+=(Vector2 v) {
     return *this;
 }
 
+Vector2 Vector2::operator-=(Vector2 v) {
+    x -= v.x;
+    y -= v.y;
+    return *this;
+}
+
 float Vector2::Magnitude() {
     if (x == 0 && y == 0) {
         return 0;

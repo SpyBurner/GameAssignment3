@@ -106,7 +106,6 @@ void Game::objectInit() {
 
         ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([ball](Collider2D *collider) {
             Rigidbody2D *rb = ball->GetComponent<Rigidbody2D>();
-            // ball->transform.position += rb->velocity * -1;
             rb->BounceOff(collider->GetNormal(ball->transform.position));
         });
 
@@ -119,23 +118,31 @@ void Game::objectInit() {
         wall->transform.rotation = 0;
         wall->transform.position = Vector2(640, 700);
         wall->transform.scale = Vector2(100, 2);
-
         wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-
         wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(1500, 60), false));
 
-        // wall->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([wall](Collider2D *collider) {
-        //     // rb->BounceOff(wall->GetComponent<BoxCollider2D>()->GetNormal(collider->gameObject->transform.position));
-        //     Rigidbody2D *rb = collider->gameObject->GetComponent<Rigidbody2D>();
-        //     BoxCollider2D *col = wall->GetComponent<BoxCollider2D>();
-
-        //     // collider->gameObject->transform.position += collider->gameObject->GetComponent<Rigidbody2D>()->velocity * -1;
-        //     if (col->GetNormal(collider->gameObject->transform.position).y == 1)
-        //         if (rb)
-        //             rb->AddForce(Vector2(0, -1) * GRAVITY_ACCELERATION);
-        // });
-
         GameObjectManager::GetInstance()->AddGameObject(wall);
+        // Left Wall
+        GameObject *leftWall = new GameObject("LeftWall");
+        leftWall->tag = 2;
+        leftWall->transform.rotation = 0;
+        leftWall->transform.position = Vector2(50, 400); // Adjust position as needed
+        leftWall->transform.scale = Vector2(2, 100); // Adjust scale as needed
+        leftWall->AddComponent(new SpriteRenderer(leftWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        leftWall->AddComponent(new BoxCollider2D(leftWall, Vector2(0, 0), Vector2(30, 1500), false));
+
+        GameObjectManager::GetInstance()->AddGameObject(leftWall);
+
+        // Right Wall
+        GameObject *rightWall = new GameObject("RightWall");
+        rightWall->tag = 2;
+        rightWall->transform.rotation = 0;
+        rightWall->transform.position = Vector2(1230, 400); // Adjust position as needed
+        rightWall->transform.scale = Vector2(2, 100); // Adjust scale as needed
+        rightWall->AddComponent(new SpriteRenderer(rightWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        rightWall->AddComponent(new BoxCollider2D(rightWall, Vector2(0, 0), Vector2(30, 1500), false));
+
+        GameObjectManager::GetInstance()->AddGameObject(rightWall);
 #pragma endregion
 
 #pragma region Player Setup
@@ -150,13 +157,13 @@ void Game::objectInit() {
         player->AddComponent(new Animator(player, {AnimationClip("Idle", "Assets/kirby_float.png", Vector2(35, 37), 1000, true, 1.0, 0, 4)}));
         player->GetComponent<Animator>()->Play("Idle");
 
-        player->AddComponent(new Rigidbody2D(player, 1, 0.025, .9, 1.0));
+        player->AddComponent(new Rigidbody2D(player, 1, 0.025, 0, 1.0));
 
         player->AddComponent(new VelocityToAnimSpeedController(player, "Idle"));
         player->AddComponent(new StayInBounds(player, false));
         player->AddComponent(new FLipToVelocity(player, Vector2(1, 0)));
 
-        player->AddComponent(new MovementController(player, 18, true));
+        player->AddComponent(new MovementController(player, 18, .5, true));
 
         player->AddComponent(new CircleCollider2D(player, Vector2(0, 0), 37, true));
 

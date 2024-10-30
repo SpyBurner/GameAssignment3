@@ -50,17 +50,17 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
     }
     
     this->acceleration = Vector2(0, 0);
-    if (velocity.Magnitude() < 0.01f) {
-        velocity = normal * 2.0f;
-    }
+    // if (velocity.Magnitude() < 0.01f) {
+    //     velocity = normal * 2.0f;
+    // }
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
 }
 
 Vector2 Rigidbody2D::Reflect(Vector2 velocity, Vector2 normal) {
-    if (normal.Magnitude() < EPS) {
-        //Ensure minimum velocity
-        velocity = velocity.Normalize();
-    }
+    // if (normal.Magnitude() < EPS) {
+    //     //Ensure minimum velocity
+    //     velocity = velocity.Normalize();
+    // }
     return velocity - 2 * (velocity.Dot(normal)) * normal;
 }
 
@@ -94,6 +94,11 @@ void Collider2D::defaultCollision(Collider2D *other) {
 
         // Project velocity onto the collision normal
         Vector2 projected = Vector2::ProjectToVector(rb->velocity, normal);
+
+        if (projected.Magnitude() * rb->bounciness > rb->gravityScale * GRAVITY_ACCELERATION) {
+            rb->BounceOff(normal);
+        }
+
         if (Vector2::Dot(projected, normal) < 0) {
             other->gameObject->transform.position += projected * -1;
             rb->velocity = rb->velocity - projected;

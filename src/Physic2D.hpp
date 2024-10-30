@@ -6,8 +6,9 @@
 class Rigidbody2D : public Component {
 private:
     Vector2 acceleration;
-    float mass, drag, bounciness;
+    float mass, drag;
 public:
+    float bounciness;
     float gravityScale;
     Vector2 velocity;
 

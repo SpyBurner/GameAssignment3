@@ -71,6 +71,7 @@ public:
     float operator*(Vector2 v);
     Vector2 operator/(float f);
     Vector2 operator+=(Vector2 v);
+    Vector2 operator-=(Vector2 v);
 
     float Magnitude();
     Vector2 Normalize();

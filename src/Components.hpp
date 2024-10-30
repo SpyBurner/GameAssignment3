@@ -17,9 +17,11 @@ private:
 
 public:
     float speed = 0;
+    float jumpForce = 0;
 
-    MovementController(GameObject *parent, float speed, bool useWASD) : Component(parent) {
+    MovementController(GameObject *parent, float speed, float jumpForce, bool useWASD) : Component(parent) {
         this->speed = speed;
+        this->jumpForce = jumpForce;
         this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
 
         if (useWASD) {
@@ -45,7 +47,7 @@ public:
 
         if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
             if (Game::event.key.keysym.sym == upKey) {
-                upSpeed = Game::event.type == SDL_KEYDOWN ? -1 : 0;
+                upSpeed = (Game::event.type == SDL_KEYDOWN ? -1 : 0) * jumpForce;
             }
             if (Game::event.key.keysym.sym == downKey) {
                 downSpeed = Game::event.type == SDL_KEYDOWN ? 1 : 0;
@@ -58,7 +60,15 @@ public:
             }
         }
 
-        rigidbody->AddForce(Vector2(leftSpeed + rightSpeed, upSpeed + downSpeed).Normalize() * actualSpeed);
+        Vector2 force = Vector2(leftSpeed + rightSpeed, 0).Normalize() * actualSpeed + Vector2(0, upSpeed);
+
+        if (force.Magnitude() > VELOCITY_EPS){
+            rigidbody->AddForce(force);
+        }
+        // else{
+        //     //If not moving horizontally, remove horizontal speed for snappy movement
+        //     rigidbody->velocity -= Vector2::ProjectToVector(rigidbody->velocity, Vector2(1, 0));
+        // }
     }
 
     void Enable() {
@@ -83,7 +93,7 @@ public:
     void Draw() {}
 
     Component *Clone(GameObject *parent) {
-        MovementController *newMovementController = new MovementController(parent, speed, upKey == SDLK_w);
+        MovementController *newMovementController = new MovementController(parent, speed, jumpForce, upKey == SDLK_w);
         return newMovementController;
     }
 };
@@ -121,8 +131,6 @@ public:
         return newFlipToVelocity;
     }
 };
-
-
 
 class AutoDestroy : public Component {
 private:
