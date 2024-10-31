@@ -157,7 +157,8 @@ void GameObjectManager::AddGameObject(GameObject *gameObject) {
 void GameObjectManager::RemoveGameObject(std::string name) {
     auto it = gameObjects.find(name);
     if (it != gameObjects.end()) {
-        delete it->second;
+        objectToRemove.push(it->second);
+        it->second->Disable();
         gameObjects.erase(it);
     }
 }
@@ -186,6 +187,12 @@ void GameObjectManager::Update() {
 
     for (auto &gameObject : objectsToUpdate) {
         gameObject->Update();
+    }
+
+    while (!objectToRemove.empty()) {
+        GameObject *gameObject = objectToRemove.top();
+        objectToRemove.pop();
+        delete gameObject;
     }
 }
 
@@ -247,9 +254,18 @@ GameObject::~GameObject() {
 }
 
 void GameObject::Update() {
+    if (!enabled) return;
     for (auto &component : components) {
         component->Update();
     }
+}
+
+void GameObject::Enable() {
+    enabled = true;
+}
+
+void GameObject::Disable() {
+    enabled = false;
 }
 
 void GameObject::Draw() {

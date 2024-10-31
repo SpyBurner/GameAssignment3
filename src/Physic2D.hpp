@@ -58,6 +58,7 @@ private:
     static CollisionManager *instance;
 
     std::vector<Collider2D *> colliders;
+    std::stack<Collider2D *> collidersToRemove;
 
 public:
     static CollisionManager *GetInstance();

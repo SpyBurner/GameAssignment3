@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <SDL2/SDL_mixer.h>
+#include <stack>
 
 class GameObject;
 
@@ -120,6 +121,8 @@ Vector2 operator*(float f, Vector2 v);
 class GameObjectManager {
 private:
     std::map<std::string, GameObject *> gameObjects;
+    std::stack<GameObject *> objectToRemove;
+
     GameObjectManager();
     static GameObjectManager *instance;
 public:
@@ -241,6 +244,7 @@ private:
     std::string name;
     std::vector<Component *> components;
 
+    bool enabled = true;
 public:
     Transform transform;
     int tag = 0;
@@ -251,6 +255,9 @@ public:
     ~GameObject();
     void Update();
     void Draw();
+
+    void Enable();
+    void Disable();
 
     std::string GetName();
 

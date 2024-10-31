@@ -168,12 +168,13 @@ public:
     void Update() {
         if (SDL_GetTicks() - startTime > lifeTime) {
             GameObject::Destroy(gameObject->GetName());
+            return;
         }
 
         if (rigidbody == nullptr)
             return;
         
-        rigidbody->AddForce(direction * speed * 1 / FPS);
+        rigidbody->velocity = direction * speed;
     }
 
     void Draw() {}
@@ -362,7 +363,9 @@ public:
             Rigidbody2D *rb = particle->GetComponent<Rigidbody2D>();
             if (rb) {
                 //Emit in random angles around emitDirection
-                int r = rand() % (int)emitAngle * 2 - (int)emitAngle;
+                int r = 0;
+                if (emitAngle > 0)
+                    r = rand() % ((int)emitAngle * 2) - (int)emitAngle;
                 Vector2 direction = Vector2::Rotate(emitDirection, r);
                 rb->AddForce(direction * emitForce);
             }

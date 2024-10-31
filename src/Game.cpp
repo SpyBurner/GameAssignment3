@@ -146,9 +146,11 @@ void Game::objectInit() {
         shell->layer = CollisionMatrix::PROJECTILE;
         shell->transform.position = position;
 
-        shell->AddComponent(new SpriteRenderer(shell, Vector2(15, 15), 10, LoadSpriteSheet("Assets/Sprites/shell_particle.png")));
+        // shell->AddComponent(new SpriteRenderer(shell, Vector2(15, 15), 10, LoadSpriteSheet("Assets/Sprites/shell_particle.png")));
 
-        shell->AddComponent(new ParticleSystem(shell, shellParticle, 1, 1000, 10, 360));
+        shell->AddComponent(new ParticleSystem(shell, shellParticle, 5, 1000, 10, 0));
+        shell->GetComponent<ParticleSystem>()->setEmitDirection(-1 * direction);
+
         shell->AddComponent(new Rigidbody2D(shell, 1, 0.025, 0, 0.0));
         shell->AddComponent(new ShellBehavior(shell, lifeTime, speed, direction));
 
@@ -158,8 +160,7 @@ void Game::objectInit() {
             GameObjectManager::GetInstance()->RemoveGameObject(shell->GetName());
         });
 
-        GameObjectManager::GetInstance()->AddGameObject(shell);
-        return shell;        
+        return shell;
     };
         
 #pragma endregion
@@ -191,8 +192,8 @@ void Game::objectInit() {
 
         player->AddComponent(new PlayerAnimController(player));
 
-        // player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 10, 5000, 200, 5, 30));
-        player->AddComponent(new ParticleSystem(player, shellParticle, 1, 1000, 10, 360));
+        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 10, 5000, 200, 5, 30));
+        player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
         
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0), 
             Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
