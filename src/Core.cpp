@@ -269,6 +269,9 @@ GameObject *GameObject::Instantiate(std::string name, const GameObject *origin, 
     newObject->transform.rotation = rotation;
     newObject->transform.scale = scale;
 
+    newObject->tag = origin->tag;
+    newObject->layer = origin->layer;
+
     // Deep copy components
     for (auto &component : origin->components) {
         Component *newComponent = component->Clone(newObject);
@@ -513,6 +516,7 @@ void Animator::Play(std::string name) {
     AnimationClip *clip = GetClip(name);
     if (clip) {
         currentClip = clip;
+        std::cout << "Playing clip: " << name << std::endl;
         currentClip->Ready();
     }
 }
@@ -750,3 +754,31 @@ void SoundManager::ResumeSound() {
 
 
 #pragma endregion
+
+#pragma region CollisionMatrix
+// Initialize the static member
+bool CollisionMatrix::COLLISION_MATRIX[32][32];
+
+void CollisionMatrix::init() {
+    for (int i = 0; i < 32; i++) {
+        for (int j = i; j < 32; j++) {
+            if (i == DEFAULT || j == DEFAULT) {
+                setCollisionMatrix(i, j, true);
+                continue;
+            }
+            setCollisionMatrix(i, j, false);
+        }
+    }
+}
+
+bool CollisionMatrix::checkCollisionMatrix(int a, int b) {
+    // Check only 1 direction of the relationship
+    return COLLISION_MATRIX[std::min(a, b)][std::max(a, b)];
+}
+
+void CollisionMatrix::setCollisionMatrix(int a, int b, bool value) {
+    // Set only 1 direction of the relationship
+    COLLISION_MATRIX[std::min(a, b)][std::max(a, b)] = value;
+}
+#pragma endregion
+

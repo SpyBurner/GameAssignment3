@@ -62,7 +62,7 @@ public:
 
         Vector2 force = Vector2(leftSpeed + rightSpeed, 0).Normalize() * actualSpeed + Vector2(0, upSpeed);
 
-        if (force.Magnitude() > VELOCITY_EPS){
+        if (force.Magnitude() > VELOCITY_EPS) {
             rigidbody->AddForce(force);
         }
         // else{
@@ -98,35 +98,86 @@ public:
     }
 };
 
-class FLipToVelocity : public Component{
+class PlayerAnimController : public Component {
+private:
+    Animator *animator;
+    Rigidbody2D *rigidbody;
+
+    enum State {
+        IDLE,
+        WALK,
+        JUMP
+    } state = IDLE;
+
+public:
+    PlayerAnimController(GameObject *parent) : Component(parent) {
+        animator = gameObject->GetComponent<Animator>();
+        rigidbody = gameObject->GetComponent<Rigidbody2D>();
+    }
+
+    void Update() {
+        if (animator == nullptr || rigidbody == nullptr) {
+            animator = gameObject->GetComponent<Animator>();
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+            if (animator == nullptr || rigidbody == nullptr)
+                return;
+        }
+
+        // std::cout << "Player velocity: " << rigidbody->velocity.x << ", " << rigidbody->velocity.y << std::endl;
+
+        if (fabs(rigidbody->velocity.x) > VELOCITY_EPS) {
+            if (state != WALK) {
+                animator->Play("Walk");
+                state = WALK;
+            }
+        } else {
+            if (state != IDLE) {
+                animator->Play("Idle");
+                state = IDLE;
+            }
+        }
+    }
+
+    void Draw() {}
+
+    Component *Clone(GameObject *parent) {
+        PlayerAnimController *newPlayerAnimController = new PlayerAnimController(parent);
+        return newPlayerAnimController;
+    }
+};
+
+class FLipToVelocity : public Component {
 private:
     SpriteRenderer *spRenderer = nullptr;
     Rigidbody2D *rigidbody = nullptr;
 
     Vector2 origin;
+
 public:
-    FLipToVelocity(GameObject *parent, Vector2 origin) : Component(parent){
+    FLipToVelocity(GameObject *parent, Vector2 origin) : Component(parent) {
         rigidbody = parent->GetComponent<Rigidbody2D>();
         spRenderer = parent->GetComponent<SpriteRenderer>();
 
         this->origin = origin;
     }
 
-    void Update(){
-        if (rigidbody == nullptr || spRenderer == nullptr){
+    void Update() {
+        if (rigidbody == nullptr || spRenderer == nullptr) {
             rigidbody = gameObject->GetComponent<Rigidbody2D>();
             spRenderer = gameObject->GetComponent<SpriteRenderer>();
-            if (rigidbody == nullptr || spRenderer == nullptr) return;
+            if (rigidbody == nullptr || spRenderer == nullptr)
+                return;
         }
-        
-        if (fabs(rigidbody->velocity.x) < VELOCITY_EPS) return;
-        
+
+        if (fabs(rigidbody->velocity.x) < VELOCITY_EPS)
+            return;
+
         spRenderer->isFlipped = Vector2::Dot(rigidbody->velocity, origin) < 0;
     }
 
-    void Draw(){}
+    void Draw() {}
 
-    Component *Clone(GameObject *parent){
+    Component *Clone(GameObject *parent) {
         FLipToVelocity *newFlipToVelocity = new FLipToVelocity(parent, origin);
         return newFlipToVelocity;
     }
@@ -136,22 +187,23 @@ class AutoDestroy : public Component {
 private:
     float timeToDestroy;
     float startTime;
+
 public:
-    AutoDestroy(GameObject *parent, float timeToDestroy) : Component(parent){
+    AutoDestroy(GameObject *parent, float timeToDestroy) : Component(parent) {
         this->timeToDestroy = timeToDestroy;
         this->startTime = SDL_GetTicks();
     }
 
-    void Update(){
-        if (SDL_GetTicks() - startTime > timeToDestroy){
+    void Update() {
+        if (SDL_GetTicks() - startTime > timeToDestroy) {
             std::cout << "Destroyed " << gameObject->GetName() << std::endl;
             GameObject::Destroy(gameObject->GetName());
         }
     }
 
-    void Draw(){}
+    void Draw() {}
 
-    Component *Clone(GameObject *parent){
+    Component *Clone(GameObject *parent) {
         AutoDestroy *newAutoDestroy = new AutoDestroy(parent, timeToDestroy);
         return newAutoDestroy;
     }
@@ -161,30 +213,40 @@ class SpawnBall : public Component {
 private:
     GameObject *ballPrefab;
     SDL_KeyCode spawnKey;
+
 public:
-    SpawnBall(GameObject *parent, GameObject *ballPrefab, SDL_KeyCode spawnKey) : Component(parent){
+    SpawnBall(GameObject *parent, GameObject *ballPrefab, SDL_KeyCode spawnKey) : Component(parent) {
         this->ballPrefab = ballPrefab;
         this->spawnKey = spawnKey;
     }
 
-    void Update(){
-        if (Game::event.type == SDL_KEYDOWN){
-            if (Game::event.key.keysym.sym == spawnKey){
-                GameObject *ball = GameObject::Instantiate("Ball" + std::to_string(rand() + rand()), ballPrefab, gameObject->transform.position, 
-                                    ballPrefab->transform.rotation, ballPrefab->transform.scale);
-                ball->AddComponent(new AutoDestroy(ball, 3000));
-                GameObjectManager::GetInstance()->AddGameObject(ball);
+    void Update() {
+        static bool spawn = false;
+        if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
+            if (Game::event.key.keysym.sym == spawnKey) {
+                spawn = Game::event.type == SDL_KEYDOWN;
             }
+        }
+        if (spawn) {
+            GameObject *ball = GameObject::Instantiate("Ball" + std::to_string(rand() + rand()), ballPrefab, gameObject->transform.position,
+                                                       ballPrefab->transform.rotation, ballPrefab->transform.scale);
+            ball->AddComponent(new AutoDestroy(ball, 3000));
+
+            Rigidbody2D *rb = gameObject->GetComponent<Rigidbody2D>();
+            if (rb) {
+                ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(-1 * rb->velocity.x * 0.5, 1));
+            }
+
+            GameObjectManager::GetInstance()->AddGameObject(ball);
         }
     }
 
-    void Draw(){}
+    void Draw() {}
 
-    Component *Clone(GameObject *parent){
+    Component *Clone(GameObject *parent) {
         SpawnBall *newSpawnBall = new SpawnBall(parent, ballPrefab, spawnKey);
         return newSpawnBall;
     }
-
 };
 
 #endif

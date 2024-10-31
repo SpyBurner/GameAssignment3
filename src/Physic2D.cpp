@@ -141,7 +141,6 @@ void CollisionManager::AddCollider(Collider2D *collider) {
 void CollisionManager::RemoveCollider(Collider2D *collider) {
     for (int i = 0; i < this->colliders.size(); i++) {
         if (this->colliders[i] == collider) {
-            std::cout<<"Collider removed"<<std::endl;
             this->colliders.erase(this->colliders.begin() + i);
             return;
         }
@@ -155,7 +154,8 @@ void CollisionManager::Update() {
             continue;
         }
         for (auto &collider2 : this->colliders) {
-            if (&collider1 == &collider2 || !collider2->enabled) {
+            if (&collider1 == &collider2 || !collider2->enabled || 
+            !CollisionMatrix::checkCollisionMatrix(collider1->gameObject->layer, collider2->gameObject->layer)) {
                 continue;
             }
 

@@ -13,6 +13,24 @@
 
 class GameObject;
 
+class CollisionMatrix {
+private:
+    static bool COLLISION_MATRIX[32][32];
+public:
+    enum Layers {
+        PLAYER = 1,
+        ENEMY = 2,
+        PROJECTILE = 4,
+        WALL = 8,
+        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL
+    };
+
+    static void init();
+    static bool checkCollisionMatrix(int a, int b);
+    static void setCollisionMatrix(int a, int b, bool value);
+};
+
+
 // Event
 template <typename... Args>
 class Event {
@@ -221,6 +239,7 @@ private:
 public:
     Transform transform;
     int tag = 0;
+    int layer = CollisionMatrix::DEFAULT;
 
     GameObject();
     GameObject(std::string name);
@@ -327,5 +346,6 @@ public:
     void ResumeSound();
 
 };
+
 
 #endif
