@@ -68,8 +68,10 @@ public:
 
         if (rigidbody == nullptr || animator == nullptr) return;
 
+        if (animator->GetCurrentClip()->GetName() != animName) return;
+
         if (rigidbody->velocity.Magnitude() > 0.01f){
-            if (animator->GetCurrentClip()->GetName() == animName && animator->GetCurrentClip()->isPlaying == false)
+            if (animator->GetCurrentClip()->isPlaying == false)
                 animator->Play(animName);
             animator->GetCurrentClip()->speedScale = rigidbody->velocity.Magnitude() * speedMultiplier;
         }

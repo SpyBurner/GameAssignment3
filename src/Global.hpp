@@ -2,6 +2,7 @@
 #define GLOBALS_HPP
 
 /*GameObject tags:
+    0 - Default
 */
 
 #include <SDL2/SDL.h>
@@ -16,8 +17,8 @@ const int WIDTH = 1280, HEIGHT = 720;
 // const int WIDTH = 1920, HEIGHT = 1080;
 const bool FULLSCREEN = false;
 
-#define VELOCITY_EPS 0.01
-#define EPS 0.0001
-#define GRAVITY_ACCELERATION 2.0f
+#define VELOCITY_EPS 0.1f
+#define EPS 0.0001f
+#define GRAVITY_ACCELERATION 9.8f  * 1.5 / FPS
 
 #endif // GLOBALS_HPP

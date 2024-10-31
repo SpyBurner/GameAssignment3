@@ -56,6 +56,12 @@ Vector2 Vector2::operator+=(Vector2 v) {
     return *this;
 }
 
+Vector2 Vector2::operator-=(Vector2 v) {
+    x -= v.x;
+    y -= v.y;
+    return *this;
+}
+
 float Vector2::Magnitude() {
     if (x == 0 && y == 0) {
         return 0;
@@ -103,6 +109,14 @@ float Vector2::Angle(Vector2 v1, Vector2 v2) {
 float Vector2::SignedAngle(Vector2 v1, Vector2 v2) {
     float angle = std::atan2(v2.y, v2.x) - std::atan2(v1.y, v1.x);
     return angle * (180.0f / M_PI); // Convert radians to degrees
+}
+
+Vector2 Vector2::ProjectToVector(Vector2 v, Vector2 onto){
+    return onto * (v.Dot(onto) / onto.Magnitude());
+}
+
+Vector2 Vector2::ProjectToPlane(Vector2 v, Vector2 normal){
+    return v - ProjectToVector(v, normal);
 }
 
 #pragma endregion
@@ -159,8 +173,14 @@ void GameObjectManager::Clear() {
 }
 
 void GameObjectManager::Update() {
+    //Copy to allow deletion during traversal
+    std::vector<GameObject*> objectsToUpdate;
     for (auto &pair : gameObjects) {
-        pair.second->Update();
+        objectsToUpdate.push_back(pair.second);
+    }
+
+    for (auto &gameObject : objectsToUpdate) {
+        gameObject->Update();
     }
 }
 
@@ -215,7 +235,8 @@ GameObject::GameObject(std::string name) {
 
 GameObject::~GameObject() {
     for (auto &component : components) {
-        delete component;
+        if (component)
+            delete component;
     }
     components.clear();
 }
@@ -247,6 +268,9 @@ GameObject *GameObject::Instantiate(std::string name, const GameObject *origin, 
     newObject->transform.position = position;
     newObject->transform.rotation = rotation;
     newObject->transform.scale = scale;
+
+    newObject->tag = origin->tag;
+    newObject->layer = origin->layer;
 
     // Deep copy components
     for (auto &component : origin->components) {
@@ -315,7 +339,7 @@ void SpriteRenderer::Draw() {
 
     // Copy the sprite to the renderer
     // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
-    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, (isFlipped)? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 }
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
@@ -492,6 +516,7 @@ void Animator::Play(std::string name) {
     AnimationClip *clip = GetClip(name);
     if (clip) {
         currentClip = clip;
+        std::cout << "Playing clip: " << name << std::endl;
         currentClip->Ready();
     }
 }
@@ -729,3 +754,31 @@ void SoundManager::ResumeSound() {
 
 
 #pragma endregion
+
+#pragma region CollisionMatrix
+// Initialize the static member
+bool CollisionMatrix::COLLISION_MATRIX[32][32];
+
+void CollisionMatrix::init() {
+    for (int i = 0; i < 32; i++) {
+        for (int j = i; j < 32; j++) {
+            if (i == DEFAULT || j == DEFAULT) {
+                setCollisionMatrix(i, j, true);
+                continue;
+            }
+            setCollisionMatrix(i, j, false);
+        }
+    }
+}
+
+bool CollisionMatrix::checkCollisionMatrix(int a, int b) {
+    // Check only 1 direction of the relationship
+    return COLLISION_MATRIX[std::min(a, b)][std::max(a, b)];
+}
+
+void CollisionMatrix::setCollisionMatrix(int a, int b, bool value) {
+    // Set only 1 direction of the relationship
+    COLLISION_MATRIX[std::min(a, b)][std::max(a, b)] = value;
+}
+#pragma endregion
+

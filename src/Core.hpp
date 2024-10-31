@@ -13,6 +13,25 @@
 
 class GameObject;
 
+class CollisionMatrix {
+private:
+    static bool COLLISION_MATRIX[32][32];
+public:
+    enum Layers {
+        PLAYER = 1,
+        ENEMY = 2,
+        PROJECTILE = 4,
+        WALL = 8,
+        CAMERA = 16,
+        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL | CAMERA
+    };
+
+    static void init();
+    static bool checkCollisionMatrix(int a, int b);
+    static void setCollisionMatrix(int a, int b, bool value);
+};
+
+
 // Event
 template <typename... Args>
 class Event {
@@ -71,6 +90,7 @@ public:
     float operator*(Vector2 v);
     Vector2 operator/(float f);
     Vector2 operator+=(Vector2 v);
+    Vector2 operator-=(Vector2 v);
 
     float Magnitude();
     Vector2 Normalize();
@@ -84,6 +104,9 @@ public:
     static float Angle(Vector2 v1, Vector2 v2);
 
     static float SignedAngle(Vector2 v1, Vector2 v2);
+
+    static Vector2 ProjectToVector(Vector2 v, Vector2 onto);
+    static Vector2 ProjectToPlane(Vector2 v, Vector2 normal);
 };
 
 Vector2 operator*(float f, Vector2 v);
@@ -217,6 +240,7 @@ private:
 public:
     Transform transform;
     int tag = 0;
+    int layer = CollisionMatrix::DEFAULT;
 
     GameObject();
     GameObject(std::string name);
@@ -245,7 +269,6 @@ T *GameObject::GetComponent() {
     return nullptr;
 }
 
-// More like a template for the GameObjectManager
 class Scene {
 private:
     std::string name;
@@ -324,5 +347,6 @@ public:
     void ResumeSound();
 
 };
+
 
 #endif
