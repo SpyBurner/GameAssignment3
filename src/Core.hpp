@@ -163,7 +163,7 @@ public:
     SDL_Texture *spriteSheet = nullptr;
     SDL_Rect spriteRect;
 
-    bool isFlipped;
+    bool isFlippedH = false, isFlippedV = false;
 
     // static void SetRenderer(SDL_Renderer *renderer);
 

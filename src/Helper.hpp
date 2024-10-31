@@ -39,6 +39,8 @@ public:
     }
 };
 
+/* Use difference in position, or rigidbody
+*/
 class VelocityToAnimSpeedController : public Component {
 private:
     // Main Rigidbody to get speed from
@@ -51,11 +53,19 @@ private:
     std::string animName;
 
     float speedMultiplier = 1.0f;
+
+    Vector2 lastPosition = Vector2(0, 0);
+
+    bool useRB;
 public:
-    VelocityToAnimSpeedController(GameObject *parent, std::string animName, float speedMultiplier = 1.0f) : Component(parent) {
+    VelocityToAnimSpeedController(GameObject *parent, std::string animName, float speedMultiplier = 1.0f, bool useRB = true) : Component(parent) {
         this->animName = animName;
         this->backupRigidbody = backupRigidbody;
         this->speedMultiplier = speedMultiplier;
+
+        this->useRB = useRB;
+
+        lastPosition = gameObject->transform.position;
     }
 
     ~VelocityToAnimSpeedController() {}
@@ -70,22 +80,40 @@ public:
 
         if (animator->GetCurrentClip()->GetName() != animName) return;
 
-        if (rigidbody->velocity.Magnitude() > 0.01f){
-            if (animator->GetCurrentClip()->isPlaying == false)
-                animator->Play(animName);
-            animator->GetCurrentClip()->speedScale = rigidbody->velocity.Magnitude() * speedMultiplier;
+        std::cout <<useRB<<std::endl;
+        if (useRB){
+            if (rigidbody->velocity.Magnitude() > VELOCITY_EPS){
+                if (animator->GetCurrentClip()->isPlaying == false)
+                    animator->Play(animName);
+                animator->GetCurrentClip()->speedScale = rigidbody->velocity.Magnitude() * speedMultiplier;
+            }
+            else{
+                if (backupRigidbody != nullptr && backupRigidbody->velocity.Magnitude() >VELOCITY_EPS){
+                    if (animator->GetCurrentClip()->GetName() == animName && animator->GetCurrentClip()->isPlaying == false)
+                        animator->Play(animName);
+                    animator->GetCurrentClip()->speedScale = backupRigidbody->velocity.Magnitude() * speedMultiplier;
+                }
+                else{
+                    animator->GetCurrentClip()->speedScale = 1.0;
+                    animator->Stop();
+                }
+            }
         }
         else{
-            if (backupRigidbody != nullptr && backupRigidbody->velocity.Magnitude() > 0.01f){
-                if (animator->GetCurrentClip()->GetName() == animName && animator->GetCurrentClip()->isPlaying == false)
+            Vector2 velocity = (gameObject->transform.position - lastPosition);
+            std::cout<<velocity.Magnitude()<<std::endl;
+
+            if ((gameObject->transform.position - lastPosition).Magnitude() > VELOCITY_EPS * 10){
+                if (animator->GetCurrentClip()->isPlaying == false)
                     animator->Play(animName);
-                animator->GetCurrentClip()->speedScale = backupRigidbody->velocity.Magnitude() * speedMultiplier;
+                animator->GetCurrentClip()->speedScale = (gameObject->transform.position - lastPosition).Magnitude() * speedMultiplier;
             }
             else{
                 animator->GetCurrentClip()->speedScale = 1.0;
                 animator->Stop();
             }
         }
+        lastPosition = gameObject->transform.position;
     }
 
     void Draw() {}
@@ -95,7 +123,7 @@ public:
     }
 
     Component *Clone(GameObject *parent) {
-        VelocityToAnimSpeedController *newRollSpeedController = new VelocityToAnimSpeedController(parent, this->animName);
+        VelocityToAnimSpeedController *newRollSpeedController = new VelocityToAnimSpeedController(parent, this->animName, this->speedMultiplier, this->useRB);
         return newRollSpeedController;
     }
 };

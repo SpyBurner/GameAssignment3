@@ -129,6 +129,18 @@ void Game::objectInit() {
 #pragma endregion
 
 #pragma region Shell Setup
+    GameObject *dropShellParticle = new GameObject("DropShellParticle");
+    dropShellParticle->layer = CollisionMatrix::PARTICLE;
+    dropShellParticle->transform.scale = Vector2(5, 5);
+
+    dropShellParticle->AddComponent(new SpriteRenderer(dropShellParticle, Vector2(5, 5), 1, nullptr));
+    dropShellParticle->AddComponent(new Rigidbody2D(dropShellParticle, 1, 0.025, 0, 1.0));
+    dropShellParticle->AddComponent(new CircleCollider2D(dropShellParticle, Vector2(0, 0), 3, true));
+    dropShellParticle->AddComponent(new Animator(dropShellParticle, {
+        AnimationClip("Default", "Assets/Sprites/shell_particle.png", Vector2(5, 5), 100, true, 1.0, 0, 3),
+    }));
+    dropShellParticle->AddComponent(new VelocityToAnimSpeedController(dropShellParticle, "Default", 1.0, false));
+
     GameObject *shellParticle = new GameObject("ShellParticle");
     shellParticle->layer = CollisionMatrix::PARTICLE;
     shellParticle->transform.scale = Vector2(4, 4);
@@ -149,8 +161,7 @@ void Game::objectInit() {
 
         shell->AddComponent(new SpriteRenderer(shell, Vector2(5, 4), 10, LoadSpriteSheet("Assets/Sprites/shell.png")));
 
-        shell->AddComponent(new ParticleSystem(shell, shellParticle, 50, 500, 0, 0));
-        shell->GetComponent<ParticleSystem>()->setEmitDirection(-1 * direction);
+        shell->AddComponent(new ParticleSystem(shell, shellParticle, 50, 500, -1 * direction, 0, 0));
 
         shell->AddComponent(new Rigidbody2D(shell, 1, 0.025, 0, 0.0));
         shell->AddComponent(new ShellBehavior(shell, lifeTime, speed, direction));
@@ -182,7 +193,6 @@ void Game::objectInit() {
             AnimationClip("Walk", "Assets/Sprites/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
         }));
 
-        
         player->GetComponent<Animator>()->Play("Idle");
 
         player->AddComponent(new Rigidbody2D(player, 1, 0.025, 0, 1.0));
@@ -194,9 +204,6 @@ void Game::objectInit() {
         player->AddComponent(new MovementController(player, 18, .5, true));
 
         player->AddComponent(new PlayerAnimController(player));
-
-        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 50, 1000, 1000, 5, 3));
-        player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
         
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0), 
             Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
@@ -206,9 +213,27 @@ void Game::objectInit() {
         //     Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
         //     rb->BounceOff(collider->GetNormal(player->transform.position));
         // });
+        player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10));
+        player->GetComponent<ParticleSystem>()->Stop();
+
+        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 50, 1000, 1000, 5, 3));
+        player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
+
 
         GameObjectManager::GetInstance()->AddGameObject(player);
 
+#pragma endregion
+
+#pragma region Gun Setup
+    GameObject *gun = new GameObject("Gun");
+    gun->transform.position = Vector2(640, 100);
+    gun->transform.scale = Vector2(0.5, 0.5);
+
+    gun->AddComponent(new SpriteRenderer(gun, Vector2(194, 55), 11, LoadSpriteSheet("Assets/Sprites/supershotgun.png")));
+
+    gun->AddComponent(new Orbit(gun, player, 50, Vector2(1, 0)));
+
+    GameObjectManager::GetInstance()->AddGameObject(gun);
 #pragma endregion
 
     });
