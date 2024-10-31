@@ -61,7 +61,8 @@ public:
             }
         }
 
-        Vector2 force = Vector2(leftSpeed + rightSpeed, 0).Normalize() * actualSpeed + Vector2(0, upSpeed);
+        // Vector2 force = Vector2(leftSpeed + rightSpeed, 0).Normalize() * actualSpeed + Vector2(0, upSpeed);
+        Vector2 force = Vector2(leftSpeed + rightSpeed, 0).Normalize() * actualSpeed + Vector2(0, 0);
 
         if (force.Magnitude() > VELOCITY_EPS) {
             rigidbody->AddForce(force);
@@ -70,6 +71,10 @@ public:
         //     //If not moving horizontally, remove horizontal speed for snappy movement
         //     rigidbody->velocity -= Vector2::ProjectToVector(rigidbody->velocity, Vector2(1, 0));
         // }
+    }
+
+    Vector2 extractSpeed() {
+        return Vector2(leftSpeed + rightSpeed, upSpeed + downSpeed);
     }
 
     void Enable() {
@@ -157,6 +162,8 @@ private:
 public:
     ShellBehavior(GameObject *parent, float lifeTime, float speed, Vector2 direction) : Component(parent) {
         this->lifeTime = lifeTime;
+        this->speed = speed;
+        this->direction = direction;
 
         this->rigidbody = gameObject->GetComponent<Rigidbody2D>();
         if (!rigidbody)
@@ -173,7 +180,7 @@ public:
 
         if (rigidbody == nullptr)
             return;
-        
+
         rigidbody->velocity = direction * speed;
     }
 
@@ -204,6 +211,8 @@ private:
     float shootAngle = 0;
 
     GameObject* particle = nullptr;
+
+    Vector2 lastDirection = Vector2(0, 1);
 public:
     PlayerShoot(GameObject *parent, SDL_KeyCode shootKey, float shellSpeed, float shellLifeTime, float shootCooldown, 
                 float shootAmount, float shootAngle) : Component(parent) {
@@ -215,7 +224,6 @@ public:
         this->shootCooldown = shootCooldown;
         this->shootAmount = shootAmount;
         this->shootAngle = shootAngle;
-
     }
 
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell) {
@@ -228,22 +236,22 @@ public:
         static bool shoot = false;
         if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
             if (Game::event.key.keysym.sym == shootKey) {
-                std::cout << "Shoot key pressed" << std::endl;
                 shoot = Game::event.type == SDL_KEYDOWN;
             }
         }
 
         if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown) {
+            MovementController* movementController = gameObject->GetComponent<MovementController>();
+            if (!movementController) return;
+            
+            //Get shoot direction
+            if (movementController->extractSpeed().Magnitude() > VELOCITY_EPS)
+                lastDirection = movementController->extractSpeed().Normalize();
+
             for (int i = 0; i < shootAmount; i++) {
-                std::cout << "Shoot " << i << std::endl;
-                //Get shoot direction
-                Rigidbody2D *rb = gameObject->GetComponent<Rigidbody2D>();
-                if (!rb) return;
-                
-                Vector2 direction = rb->velocity.Normalize();
 
                 //Rotate direction
-                direction = Vector2::Rotate(direction, (rand() % (int)shootAngle * 2 - (int)shootAngle));
+                Vector2 direction = Vector2::Rotate(lastDirection, (rand() % (int)shootAngle * 2 - (int)shootAngle));
 
                 GameObject *shell = createShell(shellSpeed, direction, shellLifetime, gameObject->transform.position);
 
@@ -312,7 +320,6 @@ public:
 
     void Update() {
         if (SDL_GetTicks() - startTime > timeToDestroy) {
-            std::cout << "Destroyed " << gameObject->GetName() << std::endl;
             GameObject::Destroy(gameObject->GetName());
         }
     }
@@ -357,8 +364,6 @@ public:
             GameObject *particle = GameObject::Instantiate("Particle" + std::to_string(rand() + rand()), particlePrefab, gameObject->transform.position,
                                                           particlePrefab->transform.rotation, particlePrefab->transform.scale);
             particle->AddComponent(new AutoDestroy(particle, particleLifeTime));
-
-            std :: cout << "Particle emitted: " << particle->GetName() << std::endl;
 
             Rigidbody2D *rb = particle->GetComponent<Rigidbody2D>();
             if (rb) {

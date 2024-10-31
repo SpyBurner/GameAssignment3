@@ -150,17 +150,20 @@ void CollisionManager::RemoveCollider(Collider2D *collider) {
 
 void CollisionManager::Update() {
 
-    for (auto &collider1 : this->colliders) {
+    for (size_t i = 0; i < this->colliders.size(); ++i) {
+        Collider2D *collider1 = this->colliders[i];
         if (!collider1->enabled) {
             continue;
         }
-        for (auto &collider2 : this->colliders) {
-            if (&collider1 == &collider2 || !collider2->enabled || 
+        for (size_t j = i + 1; j < this->colliders.size(); ++j) {
+            Collider2D *collider2 = this->colliders[j];
+            if (!collider2->enabled ||
             !CollisionMatrix::checkCollisionMatrix(collider1->gameObject->layer, collider2->gameObject->layer)) {
                 continue;
             }
             if (collider1->CheckCollision(collider2)) {
                 collider1->OnCollisionEnter.raise(collider2);
+                collider2->OnCollisionEnter.raise(collider1);
             }
         }
     }

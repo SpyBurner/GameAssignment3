@@ -131,32 +131,35 @@ void Game::objectInit() {
 #pragma region Shell Setup
     GameObject *shellParticle = new GameObject("ShellParticle");
     shellParticle->layer = CollisionMatrix::PARTICLE;
-    shellParticle->transform.scale = Vector2(5, 5);
+    shellParticle->transform.scale = Vector2(4, 4);
 
     shellParticle->AddComponent(new SpriteRenderer(shellParticle, Vector2(5, 5), 1, nullptr));
-    shellParticle->AddComponent(new Rigidbody2D(shellParticle, 1, 0.025, 0, 1.0));
-    shellParticle->AddComponent(new CircleCollider2D(shellParticle, Vector2(0, 0), 2.5, true));
+    shellParticle->AddComponent(new Rigidbody2D(shellParticle, 1, 0.025, 0, 0.0));
+    shellParticle->AddComponent(new CircleCollider2D(shellParticle, Vector2(0, 0), 3, true));
 
     shellParticle->AddComponent(new Animator(shellParticle, {
-        AnimationClip("Default", "Assets/Sprites/shell_trail.png", Vector2(3, 3), 1000, true, 1.0, 0, 1),
+        AnimationClip("Default", "Assets/Sprites/shell_trail.png", Vector2(3, 3), 100, true, 1.0, 0, 1),
     }));
 
     auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
         GameObject *shell = new GameObject("Shell" + std::to_string(rand() + rand()));
+        shell->transform.scale = Vector2(5, 5);
         shell->layer = CollisionMatrix::PROJECTILE;
         shell->transform.position = position;
 
-        // shell->AddComponent(new SpriteRenderer(shell, Vector2(15, 15), 10, LoadSpriteSheet("Assets/Sprites/shell_particle.png")));
+        shell->AddComponent(new SpriteRenderer(shell, Vector2(5, 4), 10, LoadSpriteSheet("Assets/Sprites/shell.png")));
 
-        shell->AddComponent(new ParticleSystem(shell, shellParticle, 5, 1000, 10, 0));
+        shell->AddComponent(new ParticleSystem(shell, shellParticle, 50, 500, 0, 0));
         shell->GetComponent<ParticleSystem>()->setEmitDirection(-1 * direction);
 
         shell->AddComponent(new Rigidbody2D(shell, 1, 0.025, 0, 0.0));
         shell->AddComponent(new ShellBehavior(shell, lifeTime, speed, direction));
+        shell->AddComponent(new RotateTowardVelocity(shell, Vector2(1, 0)));
 
-        shell->AddComponent(new CircleCollider2D(shell, Vector2(0, 0), 3, false));
+        shell->AddComponent(new CircleCollider2D(shell, Vector2(0, 0), 
+            5 * shell->transform.scale.x / 2
+        , true));
         shell->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([shell](Collider2D *collider) {
-            std :: cout << "Shell " << shell->GetName() << " collided with " << collider->gameObject->GetName() << std::endl;
             GameObjectManager::GetInstance()->RemoveGameObject(shell->GetName());
         });
 
@@ -170,9 +173,9 @@ void Game::objectInit() {
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
         player->transform.position = Vector2(640, 100);
-        player->transform.scale = Vector2(2, 2);
+        player->transform.scale = Vector2(4, 4);
 
-        player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, LoadSpriteSheet("Assets/default.png")));
+        player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, nullptr));
 
         player->AddComponent(new Animator(player, 
             {AnimationClip("Idle", "Assets/Sprites/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
@@ -192,17 +195,17 @@ void Game::objectInit() {
 
         player->AddComponent(new PlayerAnimController(player));
 
-        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 10, 5000, 200, 5, 30));
+        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 50, 1000, 1000, 5, 3));
         player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
         
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0), 
             Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
             , false));
 
-        player->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
-            Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
-            rb->BounceOff(collider->GetNormal(player->transform.position));
-        });
+        // player->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
+        //     Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
+        //     rb->BounceOff(collider->GetNormal(player->transform.position));
+        // });
 
         GameObjectManager::GetInstance()->AddGameObject(player);
 
