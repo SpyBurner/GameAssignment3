@@ -119,6 +119,11 @@ Vector2 Vector2::ProjectToPlane(Vector2 v, Vector2 normal){
     return v - ProjectToVector(v, normal);
 }
 
+Vector2 Vector2::Rotate(Vector2 v, float angle) {
+    float rad = angle * (M_PI / 180.0f); // Convert degrees to radians
+    return Vector2(v.x * std::cos(rad) - v.y * std::sin(rad), v.x * std::sin(rad) + v.y * std::cos(rad));
+}
+
 #pragma endregion
 
 #pragma region GameObjectManager
@@ -757,11 +762,11 @@ void SoundManager::ResumeSound() {
 
 #pragma region CollisionMatrix
 // Initialize the static member
-bool CollisionMatrix::COLLISION_MATRIX[32][32];
+bool CollisionMatrix::COLLISION_MATRIX[COLL_MATRIX_SIZE][COLL_MATRIX_SIZE];
 
 void CollisionMatrix::init() {
-    for (int i = 0; i < 32; i++) {
-        for (int j = i; j < 32; j++) {
+    for (int i = 0; i < COLL_MATRIX_SIZE; i++) {
+        for (int j = i; j < COLL_MATRIX_SIZE; j++) {
             if (i == DEFAULT || j == DEFAULT) {
                 setCollisionMatrix(i, j, true);
                 continue;
@@ -772,8 +777,17 @@ void CollisionMatrix::init() {
 }
 
 bool CollisionMatrix::checkCollisionMatrix(int a, int b) {
-    // Check only 1 direction of the relationship
-    return COLLISION_MATRIX[std::min(a, b)][std::max(a, b)];
+    // Check all combinations of bits set in a and b
+    for (int i = 0; i < COLL_MATRIX_SIZE; ++i) {
+        for (int j = 0; j < COLL_MATRIX_SIZE; ++j) {
+            if ((a & (1 << i)) && (b & (1 << j))) {
+                if (COLLISION_MATRIX[std::min(i, j)][std::max(i, j)]) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 void CollisionMatrix::setCollisionMatrix(int a, int b, bool value) {

@@ -13,9 +13,10 @@
 
 class GameObject;
 
+const int COLL_MATRIX_SIZE = 64;
 class CollisionMatrix {
 private:
-    static bool COLLISION_MATRIX[32][32];
+    static bool COLLISION_MATRIX[COLL_MATRIX_SIZE][COLL_MATRIX_SIZE];
 public:
     enum Layers {
         PLAYER = 1,
@@ -23,7 +24,8 @@ public:
         PROJECTILE = 4,
         WALL = 8,
         CAMERA = 16,
-        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL | CAMERA
+        PARTICLE = 32,
+        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL | CAMERA | PARTICLE
     };
 
     static void init();
@@ -107,6 +109,8 @@ public:
 
     static Vector2 ProjectToVector(Vector2 v, Vector2 onto);
     static Vector2 ProjectToPlane(Vector2 v, Vector2 normal);
+
+    static Vector2 Rotate(Vector2 v, float angle);
 };
 
 Vector2 operator*(float f, Vector2 v);

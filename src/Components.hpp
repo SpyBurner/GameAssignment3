@@ -7,6 +7,7 @@
 #include "Physic2D.hpp"
 #include "cmath"
 
+#pragma region Game specifics
 class MovementController : public Component {
 
 private:
@@ -146,6 +147,120 @@ public:
     }
 };
 
+class ShellBehavior : public Component {
+private:
+    Rigidbody2D *rigidbody;
+
+    float lifeTime;
+    float startTime;
+
+    float speed;
+    Vector2 direction;
+public:
+    ShellBehavior(GameObject *parent, float lifeTime, float speed, Vector2 direction) : Component(parent) {
+        this->lifeTime = lifeTime;
+
+        this->rigidbody = gameObject->GetComponent<Rigidbody2D>();
+        if (!rigidbody)
+            this->rigidbody = dynamic_cast<Rigidbody2D *>(gameObject->AddComponent(new Rigidbody2D(gameObject, 1, 0.001, 0, 0.0)));
+
+        this->startTime = SDL_GetTicks();
+    }
+
+    void Update() {
+        if (SDL_GetTicks() - startTime > lifeTime) {
+            GameObject::Destroy(gameObject->GetName());
+        }
+
+        if (rigidbody == nullptr)
+            return;
+        
+        rigidbody->AddForce(direction * speed * 1 / FPS);
+    }
+
+    void Draw() {}
+
+    Component *Clone(GameObject *parent) {
+        ShellBehavior *newShellBehavior = new ShellBehavior(parent, lifeTime, speed, direction);
+        return newShellBehavior;
+    }
+};
+
+/*Spawn shell and apply direction
+call setSpawnFunction to set the function that will create the shell
+*/
+class PlayerShoot : public Component {
+private:
+    std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell = nullptr;
+    
+    SDL_KeyCode shootKey;
+    
+    float shellSpeed = 0;
+    float shellLifetime = 0;
+
+    float shootCooldown = 0;
+    float lastShootTime = 0;
+
+    int shootAmount = 1;
+    float shootAngle = 0;
+
+    GameObject* particle = nullptr;
+public:
+    PlayerShoot(GameObject *parent, SDL_KeyCode shootKey, float shellSpeed, float shellLifeTime, float shootCooldown, 
+                float shootAmount, float shootAngle) : Component(parent) {
+        this->shootKey = shootKey;
+
+        this->shellSpeed = shellSpeed;
+        this->shellLifetime = shellLifeTime;
+
+        this->shootCooldown = shootCooldown;
+        this->shootAmount = shootAmount;
+        this->shootAngle = shootAngle;
+
+    }
+
+    void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell) {
+        this->createShell = createShell;
+    }
+
+    void Update() {
+        if (createShell == nullptr) return;
+
+        static bool shoot = false;
+        if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
+            if (Game::event.key.keysym.sym == shootKey) {
+                shoot = Game::event.type == SDL_KEYDOWN;
+            }
+        }
+
+        if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown) {
+            for (int i = 0; i < shootAmount; i++) {
+                //Get shoot direction
+                Rigidbody2D *rb = gameObject->GetComponent<Rigidbody2D>();
+                if (!rb) return;
+                
+                Vector2 direction = rb->velocity.Normalize();
+
+                //Rotate direction
+                direction = Vector2::Rotate(direction, (rand() % (int)shootAngle * 2 - (int)shootAngle));
+
+                GameObject *shell = createShell(shellSpeed, direction, shellLifetime, gameObject->transform.position);
+
+                GameObjectManager::GetInstance()->AddGameObject(shell);
+            }
+            lastShootTime = SDL_GetTicks();
+        }
+    }
+
+    void Draw() {}
+
+    Component *Clone(GameObject *parent) {
+        PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shootKey, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle);
+        return newPlayerShoot;
+    }
+};
+
+#pragma endregion
 class FLipToVelocity : public Component {
 private:
     SpriteRenderer *spRenderer = nullptr;
@@ -209,43 +324,70 @@ public:
     }
 };
 
-class SpawnBall : public Component {
+class ParticleSystem : public Component {
 private:
-    GameObject *ballPrefab;
-    SDL_KeyCode spawnKey;
+    GameObject *particlePrefab;
+    int maxParticles;
+    //Per second
+    float spawnRate;
+    float lastSpawnTime;
+    float particleLifeTime;
 
-public:
-    SpawnBall(GameObject *parent, GameObject *ballPrefab, SDL_KeyCode spawnKey) : Component(parent) {
-        this->ballPrefab = ballPrefab;
-        this->spawnKey = spawnKey;
+    float emitForce;
+
+    Vector2 emitDirection = Vector2(0, -1);
+    float emitAngle = 0;
+
+    bool isPlaying = true;
+public: 
+    ParticleSystem(GameObject *parent, GameObject *particlePrefab, int maxParticles, float spawnRate, float particleLifeTime, float emitForce, float emitAngle) : Component(parent) {
+        this->particlePrefab = particlePrefab;
+        this->maxParticles = maxParticles;
+        this->spawnRate = spawnRate;
+        this->particleLifeTime = particleLifeTime;
+        this->emitForce = emitForce;
+        this->emitAngle = emitAngle;
+
+        lastSpawnTime = SDL_GetTicks();
     }
 
     void Update() {
-        static bool spawn = false;
-        if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
-            if (Game::event.key.keysym.sym == spawnKey) {
-                spawn = Game::event.type == SDL_KEYDOWN;
-            }
-        }
-        if (spawn) {
-            GameObject *ball = GameObject::Instantiate("Ball" + std::to_string(rand() + rand()), ballPrefab, gameObject->transform.position,
-                                                       ballPrefab->transform.rotation, ballPrefab->transform.scale);
-            ball->AddComponent(new AutoDestroy(ball, 3000));
+        if (!isPlaying)
+            return;
+        if (SDL_GetTicks() - lastSpawnTime > 1000 / spawnRate) {
+            GameObject *particle = GameObject::Instantiate("Particle" + std::to_string(rand() + rand()), particlePrefab, gameObject->transform.position,
+                                                          particlePrefab->transform.rotation, particlePrefab->transform.scale);
+            particle->AddComponent(new AutoDestroy(particle, particleLifeTime));
 
-            Rigidbody2D *rb = gameObject->GetComponent<Rigidbody2D>();
+            Rigidbody2D *rb = particle->GetComponent<Rigidbody2D>();
             if (rb) {
-                ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(-1 * rb->velocity.x * 0.5, 1));
+                //Emit in random angles around emitDirection
+                int r = rand() % (int)emitAngle * 2 - (int)emitAngle;
+                Vector2 direction = Vector2::Rotate(emitDirection, r);
+                rb->AddForce(direction * emitForce);
             }
 
-            GameObjectManager::GetInstance()->AddGameObject(ball);
+            lastSpawnTime = SDL_GetTicks();
         }
     }
 
     void Draw() {}
 
+    void setEmitDirection(Vector2 direction) {
+        emitDirection = direction;
+    }
+
+    void Play(){
+        isPlaying = true;
+    }
+
+    void Stop(){
+        isPlaying = false;
+    }
+
     Component *Clone(GameObject *parent) {
-        SpawnBall *newSpawnBall = new SpawnBall(parent, ballPrefab, spawnKey);
-        return newSpawnBall;
+        ParticleSystem *newParticleSystem = new ParticleSystem(parent, particlePrefab, maxParticles, spawnRate, particleLifeTime, emitForce, emitAngle);
+        return newParticleSystem;
     }
 };
 
@@ -307,5 +449,7 @@ public:
     void Draw() {}
 
 };
+
+
 
 #endif
