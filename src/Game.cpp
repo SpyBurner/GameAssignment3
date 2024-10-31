@@ -85,7 +85,8 @@ void Game::objectInit() {
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PLAYER, CollisionMatrix::WALL, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::WALL, true);
-    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PLAYER, CollisionMatrix::PROJECTILE, false);
+
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::WALL, CollisionMatrix::PARTICLE, true);
 
     #pragma endregion
 
@@ -93,33 +94,6 @@ void Game::objectInit() {
     gameScene->AssignLogic([gameScene, this]() {
         Game::state = GAME;
         // SoundManager::GetInstance()->PlayMusic("GameBgm");
-
-#pragma region Ball Setup
-        GameObject *ball = new GameObject("Ball");
-        ball->layer = CollisionMatrix::PROJECTILE;
-        ball->transform.position = Vector2(100, 600);
-        ball->transform.scale = Vector2(2, 2);
-
-        ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), 0, LoadSpriteSheet("Assets/default.png")));
-
-        ball->AddComponent(new Animator(ball, {AnimationClip("Roll", "Assets/soccer_ball.png", Vector2(15, 15), 1000, true, 1.0, 0, 1)}));
-        ball->GetComponent<Animator>()->Play("Roll");
-
-        ball->AddComponent(new Rigidbody2D(ball, 1, 0.025, .9, 1.0));
-        ball->GetComponent<Rigidbody2D>()->AddForce(Vector2(1, 1) * 100);
-
-        ball->AddComponent(new VelocityToAnimSpeedController(ball, "Roll"));
-        ball->AddComponent(new StayInBounds(ball, false));
-
-        ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 15, true));
-
-        // ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([ball](Collider2D *collider) {
-        //     Rigidbody2D *rb = ball->GetComponent<Rigidbody2D>();
-        //     rb->BounceOff(collider->GetNormal(ball->transform.position));
-        // });
-
-        // GameObjectManager::GetInstance()->AddGameObject(ball);
-#pragma endregion
 
 #pragma region Wall Setup
         GameObject *wall = new GameObject("Wall");
@@ -154,21 +128,71 @@ void Game::objectInit() {
         GameObjectManager::GetInstance()->AddGameObject(rightWall);
 #pragma endregion
 
+#pragma region Shell Setup
+    GameObject *dropShellParticle = new GameObject("DropShellParticle");
+    dropShellParticle->layer = CollisionMatrix::PARTICLE;
+    dropShellParticle->transform.scale = Vector2(5, 5);
+
+    dropShellParticle->AddComponent(new SpriteRenderer(dropShellParticle, Vector2(5, 5), 1, nullptr));
+    dropShellParticle->AddComponent(new Rigidbody2D(dropShellParticle, 1, 0.025, 0, 1.0));
+    dropShellParticle->AddComponent(new CircleCollider2D(dropShellParticle, Vector2(0, 0), 3, true));
+    dropShellParticle->AddComponent(new Animator(dropShellParticle, {
+        AnimationClip("Default", "Assets/Sprites/shell_particle.png", Vector2(5, 5), 100, true, 1.0, 0, 3),
+    }));
+    dropShellParticle->AddComponent(new VelocityToAnimSpeedController(dropShellParticle, "Default", 1.0, false));
+
+    GameObject *shellParticle = new GameObject("ShellParticle");
+    shellParticle->layer = CollisionMatrix::PARTICLE;
+    shellParticle->transform.scale = Vector2(4, 4);
+
+    shellParticle->AddComponent(new SpriteRenderer(shellParticle, Vector2(5, 5), 1, nullptr));
+    shellParticle->AddComponent(new Rigidbody2D(shellParticle, 1, 0.025, 0, 0.0));
+    shellParticle->AddComponent(new CircleCollider2D(shellParticle, Vector2(0, 0), 3, true));
+
+    shellParticle->AddComponent(new Animator(shellParticle, {
+        AnimationClip("Default", "Assets/Sprites/shell_trail.png", Vector2(3, 3), 100, true, 1.0, 0, 1),
+    }));
+
+    auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
+        GameObject *shell = new GameObject("Shell" + std::to_string(rand() + rand()));
+        shell->transform.scale = Vector2(5, 5);
+        shell->layer = CollisionMatrix::PROJECTILE;
+        shell->transform.position = position;
+
+        shell->AddComponent(new SpriteRenderer(shell, Vector2(5, 4), 10, LoadSpriteSheet("Assets/Sprites/shell.png")));
+
+        shell->AddComponent(new ParticleSystem(shell, shellParticle, 50, 500, -1 * direction, 0, 0));
+
+        shell->AddComponent(new Rigidbody2D(shell, 1, 0.025, 0, 0.0));
+        shell->AddComponent(new ShellBehavior(shell, lifeTime, speed, direction));
+        shell->AddComponent(new RotateTowardVelocity(shell, Vector2(1, 0)));
+
+        shell->AddComponent(new CircleCollider2D(shell, Vector2(0, 0), 
+            5 * shell->transform.scale.x / 2
+        , true));
+        shell->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([shell](Collider2D *collider) {
+            GameObjectManager::GetInstance()->RemoveGameObject(shell->GetName());
+        });
+
+        return shell;
+    };
+        
+#pragma endregion
+
 #pragma region Player Setup
 
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
         player->transform.position = Vector2(640, 100);
-        player->transform.scale = Vector2(2, 2);
+        player->transform.scale = Vector2(4, 4);
 
-        player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, LoadSpriteSheet("Assets/default.png")));
+        player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, nullptr));
 
         player->AddComponent(new Animator(player, 
             {AnimationClip("Idle", "Assets/Sprites/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
             AnimationClip("Walk", "Assets/Sprites/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
         }));
 
-        
         player->GetComponent<Animator>()->Play("Idle");
 
         player->AddComponent(new Rigidbody2D(player, 1, 0.025, 0, 1.0));
@@ -179,21 +203,37 @@ void Game::objectInit() {
 
         player->AddComponent(new MovementController(player, 18, .5, true));
 
+        player->AddComponent(new PlayerAnimController(player));
+        
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0), 
             Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
             , false));
 
-        // player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
+        // player->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
         //     Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
-        //     // player->transform.position += rb->velocity * -1;
         //     rb->BounceOff(collider->GetNormal(player->transform.position));
         // });
-        player->AddComponent(new PlayerAnimController(player));
-        player->AddComponent(new SpawnBall(player, ball, SDLK_w));
+        player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10));
+        player->GetComponent<ParticleSystem>()->Stop();
+
+        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 50, 1000, 1000, 5, 3));
+        player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
 
 
         GameObjectManager::GetInstance()->AddGameObject(player);
 
+#pragma endregion
+
+#pragma region Gun Setup
+    GameObject *gun = new GameObject("Gun");
+    gun->transform.position = Vector2(640, 100);
+    gun->transform.scale = Vector2(0.5, 0.5);
+
+    gun->AddComponent(new SpriteRenderer(gun, Vector2(194, 55), 11, LoadSpriteSheet("Assets/Sprites/supershotgun.png")));
+
+    gun->AddComponent(new Orbit(gun, player, 50, Vector2(1, 0)));
+
+    GameObjectManager::GetInstance()->AddGameObject(gun);
 #pragma endregion
 
     });
@@ -246,7 +286,6 @@ void Game::handleSceneChange() {
 
 void Game::update() {
     //TEST
-
     //TEST
 
     SceneManager::GetInstance()->Update();
