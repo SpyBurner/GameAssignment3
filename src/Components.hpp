@@ -125,7 +125,7 @@ public:
 
         // std::cout << "Player velocity: " << rigidbody->velocity.x << ", " << rigidbody->velocity.y << std::endl;
 
-        if (fabs(rigidbody->velocity.x) > VELOCITY_EPS) {
+        if (fabs(rigidbody->velocity.x) > VELOCITY_EPS * 10) {
             if (state != WALK) {
                 animator->Play("Walk");
                 state = WALK;
@@ -247,6 +247,65 @@ public:
         SpawnBall *newSpawnBall = new SpawnBall(parent, ballPrefab, spawnKey);
         return newSpawnBall;
     }
+};
+
+class Camera : public Component {
+private:
+    GameObject *follow = nullptr;
+    Vector2 offset;
+    Vector2 deadZone;
+    Vector2 size;
+
+    Rigidbody2D *rigidbody = nullptr;
+
+    float speed;
+public:
+
+    Camera(GameObject *parent, GameObject *follow, Vector2 size, Vector2 offset, float speed, Vector2 deadZone) : Component(parent) {
+        this->follow = follow;
+
+        this->size = size;
+        this->offset = offset;
+
+        this->deadZone = deadZone;
+
+        this->speed = speed;
+
+        rigidbody = gameObject->GetComponent<Rigidbody2D>();
+    }
+
+    void Update() {
+        if (follow == nullptr)
+            return;
+
+        Vector2 followPos = follow->transform.position + offset;
+
+        //Deadzone check
+        bool move = false;
+        if (fabs(followPos.x - gameObject->transform.position.x) > deadZone.x) {
+            gameObject->transform.position.x += (followPos.x - gameObject->transform.position.x) * speed * 1 / FPS;
+            move = true;
+        }
+
+        if (fabs(followPos.y - gameObject->transform.position.y) > deadZone.y) {
+            gameObject->transform.position.y += (followPos.y - gameObject->transform.position.y) * speed * 1 / FPS;
+            move = true;
+        }
+
+        if (!rigidbody){
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+            if (!rigidbody)
+                return;
+        }
+
+        //Only move if the target is out of deadzone
+        if (move){
+            rigidbody->AddForce((follow->transform.position - gameObject->transform.position).Normalize() * speed * 1 / FPS);
+        }
+    }
+
+    void Draw() {}
+
 };
 
 #endif

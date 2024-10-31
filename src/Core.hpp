@@ -22,7 +22,8 @@ public:
         ENEMY = 2,
         PROJECTILE = 4,
         WALL = 8,
-        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL
+        CAMERA = 16,
+        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL | CAMERA
     };
 
     static void init();

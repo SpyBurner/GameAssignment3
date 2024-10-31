@@ -100,7 +100,7 @@ void Game::objectInit() {
         ball->transform.position = Vector2(100, 600);
         ball->transform.scale = Vector2(2, 2);
 
-        ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), 10, LoadSpriteSheet("Assets/default.png")));
+        ball->AddComponent(new SpriteRenderer(ball, Vector2(15, 15), 0, LoadSpriteSheet("Assets/default.png")));
 
         ball->AddComponent(new Animator(ball, {AnimationClip("Roll", "Assets/soccer_ball.png", Vector2(15, 15), 1000, true, 1.0, 0, 1)}));
         ball->GetComponent<Animator>()->Play("Roll");
@@ -111,12 +111,12 @@ void Game::objectInit() {
         ball->AddComponent(new VelocityToAnimSpeedController(ball, "Roll"));
         ball->AddComponent(new StayInBounds(ball, false));
 
-        ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 7.5, true));
+        ball->AddComponent(new CircleCollider2D(ball, Vector2(0, 0), 15, true));
 
-        ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([ball](Collider2D *collider) {
-            Rigidbody2D *rb = ball->GetComponent<Rigidbody2D>();
-            rb->BounceOff(collider->GetNormal(ball->transform.position));
-        });
+        // ball->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([ball](Collider2D *collider) {
+        //     Rigidbody2D *rb = ball->GetComponent<Rigidbody2D>();
+        //     rb->BounceOff(collider->GetNormal(ball->transform.position));
+        // });
 
         // GameObjectManager::GetInstance()->AddGameObject(ball);
 #pragma endregion
@@ -164,8 +164,8 @@ void Game::objectInit() {
         player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, LoadSpriteSheet("Assets/default.png")));
 
         player->AddComponent(new Animator(player, 
-            {AnimationClip("Idle", "Assets/Sprites/player_idle.png", Vector2(16, 32), 1000, true, 1.0, 0, 2),
-            AnimationClip("Walk", "Assets/Sprites/player_walking.png", Vector2(16, 32), 1000, true, 1.0, 0, 4),
+            {AnimationClip("Idle", "Assets/Sprites/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
+            AnimationClip("Walk", "Assets/Sprites/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
         }));
 
         
@@ -180,7 +180,7 @@ void Game::objectInit() {
         player->AddComponent(new MovementController(player, 18, .5, true));
 
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0), 
-            Vector2(16 * player->transform.scale.x, 32 * player->transform.scale.y) 
+            Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
             , false));
 
         // player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {

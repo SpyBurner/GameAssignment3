@@ -97,6 +97,7 @@ void Collider2D::defaultCollision(Collider2D *other) {
 
         if (projected.Magnitude() * rb->bounciness > rb->gravityScale * GRAVITY_ACCELERATION) {
             rb->BounceOff(normal);
+            return;
         }
 
         if (Vector2::Dot(projected, normal) < 0) {
