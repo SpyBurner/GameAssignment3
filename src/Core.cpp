@@ -521,7 +521,6 @@ void Animator::Play(std::string name) {
     AnimationClip *clip = GetClip(name);
     if (clip) {
         currentClip = clip;
-        std::cout << "Playing clip: " << name << std::endl;
         currentClip->Ready();
     }
 }
@@ -777,17 +776,20 @@ void CollisionMatrix::init() {
 }
 
 bool CollisionMatrix::checkCollisionMatrix(int a, int b) {
+
+    return COLLISION_MATRIX[std::min(a, b)][std::max(a, b)];
+
     // Check all combinations of bits set in a and b
-    for (int i = 0; i < COLL_MATRIX_SIZE; ++i) {
-        for (int j = 0; j < COLL_MATRIX_SIZE; ++j) {
-            if ((a & (1 << i)) && (b & (1 << j))) {
-                if (COLLISION_MATRIX[std::min(i, j)][std::max(i, j)]) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
+    // for (int i = 0; i < COLL_MATRIX_SIZE; ++i) {
+    //     for (int j = i; j < COLL_MATRIX_SIZE; ++j) {
+    //         if ((a & (1 << i)) && (b & (1 << j))) {
+    //             if (COLLISION_MATRIX[std::min(i, j)][std::max(i, j)]) {
+    //                 return true;
+    //             }
+    //         }
+    //     }
+    // }
+    // return false;
 }
 
 void CollisionMatrix::setCollisionMatrix(int a, int b, bool value) {

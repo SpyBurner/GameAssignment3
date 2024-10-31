@@ -124,8 +124,6 @@ public:
                 return;
         }
 
-        // std::cout << "Player velocity: " << rigidbody->velocity.x << ", " << rigidbody->velocity.y << std::endl;
-
         if (fabs(rigidbody->velocity.x) > VELOCITY_EPS * 10) {
             if (state != WALK) {
                 animator->Play("Walk");
@@ -229,12 +227,14 @@ public:
         static bool shoot = false;
         if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
             if (Game::event.key.keysym.sym == shootKey) {
+                std::cout << "Shoot key pressed" << std::endl;
                 shoot = Game::event.type == SDL_KEYDOWN;
             }
         }
 
         if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown) {
             for (int i = 0; i < shootAmount; i++) {
+                std::cout << "Shoot " << i << std::endl;
                 //Get shoot direction
                 Rigidbody2D *rb = gameObject->GetComponent<Rigidbody2D>();
                 if (!rb) return;
@@ -327,7 +327,6 @@ public:
 class ParticleSystem : public Component {
 private:
     GameObject *particlePrefab;
-    int maxParticles;
     //Per second
     float spawnRate;
     float lastSpawnTime;
@@ -340,9 +339,8 @@ private:
 
     bool isPlaying = true;
 public: 
-    ParticleSystem(GameObject *parent, GameObject *particlePrefab, int maxParticles, float spawnRate, float particleLifeTime, float emitForce, float emitAngle) : Component(parent) {
+    ParticleSystem(GameObject *parent, GameObject *particlePrefab, float spawnRate, float particleLifeTime, float emitForce, float emitAngle) : Component(parent) {
         this->particlePrefab = particlePrefab;
-        this->maxParticles = maxParticles;
         this->spawnRate = spawnRate;
         this->particleLifeTime = particleLifeTime;
         this->emitForce = emitForce;
@@ -359,6 +357,8 @@ public:
                                                           particlePrefab->transform.rotation, particlePrefab->transform.scale);
             particle->AddComponent(new AutoDestroy(particle, particleLifeTime));
 
+            std :: cout << "Particle emitted: " << particle->GetName() << std::endl;
+
             Rigidbody2D *rb = particle->GetComponent<Rigidbody2D>();
             if (rb) {
                 //Emit in random angles around emitDirection
@@ -368,6 +368,8 @@ public:
             }
 
             lastSpawnTime = SDL_GetTicks();
+
+            GameObjectManager::GetInstance()->AddGameObject(particle);
         }
     }
 
@@ -386,7 +388,7 @@ public:
     }
 
     Component *Clone(GameObject *parent) {
-        ParticleSystem *newParticleSystem = new ParticleSystem(parent, particlePrefab, maxParticles, spawnRate, particleLifeTime, emitForce, emitAngle);
+        ParticleSystem *newParticleSystem = new ParticleSystem(parent, particlePrefab, spawnRate, particleLifeTime, emitForce, emitAngle);
         return newParticleSystem;
     }
 };

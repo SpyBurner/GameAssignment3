@@ -85,9 +85,8 @@ void Game::objectInit() {
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PLAYER, CollisionMatrix::WALL, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::WALL, true);
-    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PLAYER, CollisionMatrix::PROJECTILE, false);
 
-    CollisionMatrix::setCollisionMatrix(CollisionMatrix::WALL, CollisionMatrix::PARTICLE, false);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::WALL, CollisionMatrix::PARTICLE, true);
 
     #pragma endregion
 
@@ -132,14 +131,14 @@ void Game::objectInit() {
 #pragma region Shell Setup
     GameObject *shellParticle = new GameObject("ShellParticle");
     shellParticle->layer = CollisionMatrix::PARTICLE;
-    shellParticle->transform.scale = Vector2(1, 1);
+    shellParticle->transform.scale = Vector2(5, 5);
 
-    shellParticle->AddComponent(new SpriteRenderer(shellParticle, Vector2(5, 5), 10, nullptr));
+    shellParticle->AddComponent(new SpriteRenderer(shellParticle, Vector2(5, 5), 1, nullptr));
     shellParticle->AddComponent(new Rigidbody2D(shellParticle, 1, 0.025, 0, 1.0));
-    shellParticle->AddComponent(new CircleCollider2D(shellParticle, Vector2(0, 0), 2, true));
+    shellParticle->AddComponent(new CircleCollider2D(shellParticle, Vector2(0, 0), 2.5, true));
 
-    shellParticle->AddComponent(new Animator(shellParticle, 
-        {AnimationClip("Default", "Assets/Sprites/shell_particle.png", Vector2(3, 3), 0.25, true, 1.0, 0, 1),
+    shellParticle->AddComponent(new Animator(shellParticle, {
+        AnimationClip("Default", "Assets/Sprites/shell_trail.png", Vector2(3, 3), 1000, true, 1.0, 0, 1),
     }));
 
     auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
@@ -147,7 +146,9 @@ void Game::objectInit() {
         shell->layer = CollisionMatrix::PROJECTILE;
         shell->transform.position = position;
 
-        shell->AddComponent(new ParticleSystem(shell, shellParticle, 10, 10, 1000, 10, 360));
+        shell->AddComponent(new SpriteRenderer(shell, Vector2(15, 15), 10, LoadSpriteSheet("Assets/Sprites/shell_particle.png")));
+
+        shell->AddComponent(new ParticleSystem(shell, shellParticle, 1, 1000, 10, 360));
         shell->AddComponent(new Rigidbody2D(shell, 1, 0.025, 0, 0.0));
         shell->AddComponent(new ShellBehavior(shell, lifeTime, speed, direction));
 
@@ -188,17 +189,19 @@ void Game::objectInit() {
 
         player->AddComponent(new MovementController(player, 18, .5, true));
 
+        player->AddComponent(new PlayerAnimController(player));
+
+        // player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 10, 5000, 200, 5, 30));
+        player->AddComponent(new ParticleSystem(player, shellParticle, 1, 1000, 10, 360));
+        
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0), 
             Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
             , false));
 
-        player->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
+        player->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
             Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
             rb->BounceOff(collider->GetNormal(player->transform.position));
         });
-        player->AddComponent(new PlayerAnimController(player));
-
-        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 10, 5000, 200, 5, 30));
 
         GameObjectManager::GetInstance()->AddGameObject(player);
 
@@ -254,7 +257,6 @@ void Game::handleSceneChange() {
 
 void Game::update() {
     //TEST
-
     //TEST
 
     SceneManager::GetInstance()->Update();

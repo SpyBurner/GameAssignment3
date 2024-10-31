@@ -159,10 +159,8 @@ void CollisionManager::Update() {
             !CollisionMatrix::checkCollisionMatrix(collider1->gameObject->layer, collider2->gameObject->layer)) {
                 continue;
             }
-
             if (collider1->CheckCollision(collider2)) {
                 collider1->OnCollisionEnter.raise(collider2);
-                collider2->OnCollisionEnter.raise(collider1);
             }
         }
     }

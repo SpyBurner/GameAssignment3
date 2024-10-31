@@ -164,9 +164,6 @@ public:
                     this->gameObject->transform.position.y = HEIGHT;
             }
         }
-        if (bounced){
-            SoundManager::GetInstance()->PlaySound("ball_bounce");
-        }
     }
 
     void Draw() {}
@@ -222,4 +219,22 @@ void RenderTexture(SDL_Texture* texture, int x, int y) {
     // Render the texture
     SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
 }
+
+class PositionTracker : public Component{
+private:
+public:
+    PositionTracker(GameObject *parent) : Component(parent) {}
+
+    void Update(){
+        std::cout << "Position x: " << gameObject->transform.position.x << " y: " << gameObject->transform.position.y << std::endl;
+    }
+
+    void Draw() {}
+
+    Component *Clone(GameObject *parent) {
+        PositionTracker *newPositionTracker = new PositionTracker(parent);
+        return newPositionTracker;
+    }
+};
+
 #endif // HELPER_HPP
