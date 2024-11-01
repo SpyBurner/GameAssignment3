@@ -212,10 +212,6 @@ void Game::objectInit() {
             Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
             , false));
 
-        // player->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
-        //     Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
-        //     rb->BounceOff(collider->GetNormal(player->transform.position));
-        // });
         player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10));
         player->GetComponent<ParticleSystem>()->Stop();
 
@@ -223,9 +219,11 @@ void Game::objectInit() {
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT))
         );
 
-        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 50, 1000, 1000, 5, 3, aimStick));
+        player->AddComponent(new PlayerShoot(player, 50, 1000, 1000, 5, 5, aimStick));
         player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
 
+        player->AddComponent(new JumpController(player, SDLK_SPACE, 20, 450, CollisionMatrix::WALL));
+        player->GetComponent<JumpController>()->BindCollider(player->GetComponent<BoxCollider2D>());
 
         GameObjectManager::GetInstance()->AddGameObject(player);
 

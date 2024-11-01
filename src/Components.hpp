@@ -234,13 +234,85 @@ public:
     }
 };
 
+/*Grounded condition:
+*/
 class JumpController : public Component {
 private:
     Rigidbody2D *rigidbody = nullptr;
 
     SDL_KeyCode jumpKey;
     float jumpForce = 0;
+    
+    float cooldown = 0;
+    float lastJumpTime = 0;
+    bool grounded = false;
+
+    CollisionMatrix::Layers groundLayer = CollisionMatrix::DEFAULT;
+    
+    Vector2 lastNormal = Vector2(0, 0);
+
+    void OnCollisionEnter(Collider2D *collider) {
+        grounded = false;
+        lastNormal = Vector2(0, 0);
+
+        if (SDL_GetTicks() - lastJumpTime < cooldown) return;
+        if (collider->gameObject->layer != groundLayer) return;
+        
+        // > 0 for wall jump
+        Vector2 normal = collider->GetNormal(gameObject->transform.position);
+        lastNormal = normal;
+        if (normal.y > 0) return;
+
+        grounded = true;
+    }
 public:
+
+    JumpController(GameObject *parent, SDL_KeyCode jumpKey, 
+                float jumpForce, float cooldown, CollisionMatrix::Layers whatIsGround) : Component(parent) {
+        this->jumpKey = jumpKey;
+        this->jumpForce = jumpForce;
+        this->cooldown = cooldown;
+
+        this->groundLayer = whatIsGround;
+
+        this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
+    }
+
+    void Update() {
+        if (!enabled)
+            return;
+        if (rigidbody == nullptr){
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+            if (rigidbody == nullptr)
+                return;
+        }
+
+        if (SDL_GetTicks() - lastJumpTime < cooldown) return;
+        if (Game::event.type == SDL_KEYDOWN) {
+            if (Game::event.key.keysym.sym == jumpKey && grounded) {
+                Vector2 direction = Vector2(0, -1);
+                if (lastNormal.x != 0)
+                    direction += lastNormal / 4;
+                
+                rigidbody->AddForce(direction.Normalize() * jumpForce);
+                grounded = false;
+                lastJumpTime = SDL_GetTicks();
+            }
+        }
+    }
+
+    void Draw() {}
+
+    void BindCollider(Collider2D *collider) {
+        collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+            OnCollisionEnter(collider);
+        });
+    }
+
+    Component *Clone(GameObject *parent) {
+        JumpController *newJumpController = new JumpController(parent, jumpKey, jumpForce, cooldown, groundLayer);
+        return newJumpController;
+    }
 
 };
 
@@ -339,8 +411,6 @@ class PlayerShoot : public Component {
 private:
     std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell = nullptr;
     
-    SDL_KeyCode shootKey;
-    
     float shellSpeed = 0;
     float shellLifetime = 0;
 
@@ -358,10 +428,8 @@ private:
 
     Joystick *joystick = nullptr;
 public:
-    PlayerShoot(GameObject *parent, SDL_KeyCode shootKey, float shellSpeed, float shellLifeTime, float shootCooldown, 
+    PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, 
                 float shootAmount, float shootAngle, Joystick *joystick) : Component(parent) {
-        this->shootKey = shootKey;
-
         this->shellSpeed = shellSpeed;
         this->shellLifetime = shellLifeTime;
 
@@ -414,11 +482,10 @@ public:
     void Draw() {}
 
     Component *Clone(GameObject *parent) {
-        PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shootKey, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick);
+        PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick);
         return newPlayerShoot;
     }
 };
-
 class Orbit : public Component {
 private:
     GameObject *target = nullptr;
