@@ -171,6 +171,7 @@ public:
     ~SpriteRenderer();
     void Update();
     void Draw();
+
     Component *Clone(GameObject *parent);
 
     int GetDrawOrder();

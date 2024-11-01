@@ -610,36 +610,46 @@ public:
         if (follow == nullptr)
             return;
 
-        Vector2 followPos = follow->transform.position + offset;
-
-        //Deadzone check
-        bool move = false;
-        if (fabs(followPos.x - gameObject->transform.position.x) > deadZone.x) {
-            gameObject->transform.position.x += (followPos.x - gameObject->transform.position.x) * speed * 1 / FPS;
-            move = true;
-        }
-
-        if (fabs(followPos.y - gameObject->transform.position.y) > deadZone.y) {
-            gameObject->transform.position.y += (followPos.y - gameObject->transform.position.y) * speed * 1 / FPS;
-            move = true;
-        }
-
         if (!rigidbody){
             rigidbody = gameObject->GetComponent<Rigidbody2D>();
             if (!rigidbody)
                 return;
         }
 
+        Vector2 followPos = follow->transform.position + offset;
+
+        //Deadzone check
+        bool move = false;
+        if (fabs(followPos.x - gameObject->transform.position.x) > deadZone.x) move = true;
+        if (fabs(followPos.y - gameObject->transform.position.y) > deadZone.y) move = true;
+
         //Only move if the target is out of deadzone
         if (move){
-            rigidbody->AddForce((follow->transform.position - gameObject->transform.position).Normalize() * speed * 1 / FPS);
+            rigidbody->AddForce((follow->transform.position - gameObject->transform.position) * speed * 1 / FPS);
         }
     }
 
     void Draw() {}
 
-};
+    Vector2 WorldToScreen(Vector2 worldPos) {
+        Vector2 screenPos = worldPos - gameObject->transform.position + size / 2;
+        return screenPos;
+    }
 
+    Vector2 ScreenToWorld(Vector2 screenPos) {
+        Vector2 worldPos = screenPos + gameObject->transform.position - size / 2;
+        return worldPos;
+    }
+
+    void SetFollow(GameObject *follow) {
+        this->follow = follow;
+    }
+
+    Component *Clone(GameObject *parent) {
+        Camera *newCamera = new Camera(parent, follow, size, offset, speed, deadZone);
+        return newCamera;
+    }
+};
 
 
 #endif

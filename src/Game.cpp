@@ -11,6 +11,7 @@
 #include <SDL2/SDL_mixer.h>
 
 SDL_Event Game::event;
+GameObject *Game::CAMERA = nullptr;
 
 Game::Game() {
     isRunning = false;
@@ -239,6 +240,16 @@ void Game::objectInit() {
     gun->AddComponent(new Orbit(gun, player, 25, Vector2(1, 0), aimStick));
 
     GameObjectManager::GetInstance()->AddGameObject(gun);
+#pragma endregion
+
+#pragma region Camera Setup
+        GameObject *camera = new GameObject("Camera");
+        camera->AddComponent(new Camera(camera, nullptr, Vector2(1280, 720), Vector2(0, 0), 0.5, Vector2(100, 100)));
+        camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
+        
+        Game::CAMERA = camera;
+
+        GameObjectManager::GetInstance()->AddGameObject(camera);
 #pragma endregion
 
     });
