@@ -131,7 +131,7 @@ void Game::objectInit() {
 #pragma region Shell Setup
     GameObject *dropShellParticle = new GameObject("DropShellParticle");
     dropShellParticle->layer = CollisionMatrix::PARTICLE;
-    dropShellParticle->transform.scale = Vector2(5, 5);
+    dropShellParticle->transform.scale = Vector2(2, 2);
 
     dropShellParticle->AddComponent(new SpriteRenderer(dropShellParticle, Vector2(5, 5), 1, nullptr));
     dropShellParticle->AddComponent(new Rigidbody2D(dropShellParticle, 1, 0.025, 0, 1.0));
@@ -143,7 +143,7 @@ void Game::objectInit() {
 
     GameObject *shellParticle = new GameObject("ShellParticle");
     shellParticle->layer = CollisionMatrix::PARTICLE;
-    shellParticle->transform.scale = Vector2(4, 4);
+    shellParticle->transform.scale = Vector2(2, 2);
 
     shellParticle->AddComponent(new SpriteRenderer(shellParticle, Vector2(5, 5), 1, nullptr));
     shellParticle->AddComponent(new Rigidbody2D(shellParticle, 1, 0.025, 0, 0.0));
@@ -155,7 +155,7 @@ void Game::objectInit() {
 
     auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
         GameObject *shell = new GameObject("Shell" + std::to_string(rand() + rand()));
-        shell->transform.scale = Vector2(5, 5);
+        shell->transform.scale = Vector2(2, 2);
         shell->layer = CollisionMatrix::PROJECTILE;
         shell->transform.position = position;
 
@@ -184,7 +184,7 @@ void Game::objectInit() {
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
         player->transform.position = Vector2(640, 100);
-        player->transform.scale = Vector2(4, 4);
+        player->transform.scale = Vector2(2, 2);
 
         player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, nullptr));
 
@@ -232,11 +232,11 @@ void Game::objectInit() {
 #pragma region Gun Setup
     GameObject *gun = new GameObject("Gun");
     gun->transform.position = Vector2(640, 100);
-    gun->transform.scale = Vector2(0.5, 0.5);
+    gun->transform.scale = Vector2(1.5, 1.5);
 
-    gun->AddComponent(new SpriteRenderer(gun, Vector2(194, 55), 11, LoadSpriteSheet("Assets/Sprites/supershotgun.png")));
+    gun->AddComponent(new SpriteRenderer(gun, Vector2(16, 16), 11, LoadSpriteSheet("Assets/Sprites/gun.png")));
 
-    gun->AddComponent(new Orbit(gun, player, 50, Vector2(1, 0), aimStick));
+    gun->AddComponent(new Orbit(gun, player, 25, Vector2(1, 0), aimStick));
 
     GameObjectManager::GetInstance()->AddGameObject(gun);
 #pragma endregion
