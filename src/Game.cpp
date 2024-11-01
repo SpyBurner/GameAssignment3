@@ -99,10 +99,10 @@ void Game::objectInit() {
         GameObject *wall = new GameObject("Wall");
         wall->layer = CollisionMatrix::WALL;
         wall->transform.rotation = 0;
-        wall->transform.position = Vector2(640, 700);
-        wall->transform.scale = Vector2(100, 2);
+        wall->transform.position = Vector2(1000, 700);
+        wall->transform.scale = Vector2(500, 2);
         wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(1500, 60), false));
+        wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(7500, 60), false));
 
         GameObjectManager::GetInstance()->AddGameObject(wall);
         // Left Wall
@@ -120,7 +120,7 @@ void Game::objectInit() {
         GameObject *rightWall = new GameObject("RightWall");
         rightWall->layer = CollisionMatrix::WALL;
         rightWall->transform.rotation = 0;
-        rightWall->transform.position = Vector2(1230, 400); // Adjust position as needed
+        rightWall->transform.position = Vector2(2000, 400); // Adjust position as needed
         rightWall->transform.scale = Vector2(2, 100); // Adjust scale as needed
         rightWall->AddComponent(new SpriteRenderer(rightWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
         rightWall->AddComponent(new BoxCollider2D(rightWall, Vector2(0, 0), Vector2(30, 1500), false));
@@ -131,7 +131,7 @@ void Game::objectInit() {
 #pragma region Shell Setup
     GameObject *dropShellParticle = new GameObject("DropShellParticle");
     dropShellParticle->layer = CollisionMatrix::PARTICLE;
-    dropShellParticle->transform.scale = Vector2(5, 5);
+    dropShellParticle->transform.scale = Vector2(2, 2);
 
     dropShellParticle->AddComponent(new SpriteRenderer(dropShellParticle, Vector2(5, 5), 1, nullptr));
     dropShellParticle->AddComponent(new Rigidbody2D(dropShellParticle, 1, 0.025, 0, 1.0));
@@ -143,7 +143,7 @@ void Game::objectInit() {
 
     GameObject *shellParticle = new GameObject("ShellParticle");
     shellParticle->layer = CollisionMatrix::PARTICLE;
-    shellParticle->transform.scale = Vector2(4, 4);
+    shellParticle->transform.scale = Vector2(2, 2);
 
     shellParticle->AddComponent(new SpriteRenderer(shellParticle, Vector2(5, 5), 1, nullptr));
     shellParticle->AddComponent(new Rigidbody2D(shellParticle, 1, 0.025, 0, 0.0));
@@ -155,7 +155,7 @@ void Game::objectInit() {
 
     auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
         GameObject *shell = new GameObject("Shell" + std::to_string(rand() + rand()));
-        shell->transform.scale = Vector2(5, 5);
+        shell->transform.scale = Vector2(2, 2);
         shell->layer = CollisionMatrix::PROJECTILE;
         shell->transform.position = position;
 
@@ -184,7 +184,7 @@ void Game::objectInit() {
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
         player->transform.position = Vector2(640, 100);
-        player->transform.scale = Vector2(4, 4);
+        player->transform.scale = Vector2(2, 2);
 
         player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, nullptr));
 
@@ -198,10 +198,13 @@ void Game::objectInit() {
         player->AddComponent(new Rigidbody2D(player, 1, 0.025, 0, 1.0));
 
         player->AddComponent(new VelocityToAnimSpeedController(player, "Walk"));
-        player->AddComponent(new StayInBounds(player, false));
         player->AddComponent(new FLipToVelocity(player, Vector2(1, 0)));
 
-        player->AddComponent(new MovementController(player, 18, .5, true));
+        Joystick *movementStick = dynamic_cast<Joystick *>(
+            player->AddComponent(new Joystick(player, SDLK_w, SDLK_s, SDLK_a, SDLK_d))
+        );
+
+        player->AddComponent(new MovementController(player, 18, .5, movementStick));
 
         player->AddComponent(new PlayerAnimController(player));
         
@@ -209,16 +212,18 @@ void Game::objectInit() {
             Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y) 
             , false));
 
-        // player->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([player](Collider2D *collider) {
-        //     Rigidbody2D *rb = player->GetComponent<Rigidbody2D>();
-        //     rb->BounceOff(collider->GetNormal(player->transform.position));
-        // });
         player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10));
         player->GetComponent<ParticleSystem>()->Stop();
 
-        player->AddComponent(new PlayerShoot(player, SDLK_SPACE, 50, 1000, 1000, 5, 3));
+        Joystick *aimStick = dynamic_cast<Joystick *>(
+            player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT))
+        );
+
+        player->AddComponent(new PlayerShoot(player, 50, 1000, 1000, 5, 5, aimStick));
         player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
 
+        player->AddComponent(new JumpController(player, SDLK_SPACE, 20, 450, CollisionMatrix::WALL));
+        player->GetComponent<JumpController>()->BindCollider(player->GetComponent<BoxCollider2D>());
 
         GameObjectManager::GetInstance()->AddGameObject(player);
 
@@ -227,11 +232,11 @@ void Game::objectInit() {
 #pragma region Gun Setup
     GameObject *gun = new GameObject("Gun");
     gun->transform.position = Vector2(640, 100);
-    gun->transform.scale = Vector2(0.5, 0.5);
+    gun->transform.scale = Vector2(1.5, 1.5);
 
-    gun->AddComponent(new SpriteRenderer(gun, Vector2(194, 55), 11, LoadSpriteSheet("Assets/Sprites/supershotgun.png")));
+    gun->AddComponent(new SpriteRenderer(gun, Vector2(16, 16), 11, LoadSpriteSheet("Assets/Sprites/gun.png")));
 
-    gun->AddComponent(new Orbit(gun, player, 50, Vector2(1, 0)));
+    gun->AddComponent(new Orbit(gun, player, 25, Vector2(1, 0), aimStick));
 
     GameObjectManager::GetInstance()->AddGameObject(gun);
 #pragma endregion

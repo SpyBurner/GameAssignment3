@@ -113,47 +113,41 @@ public:
 
 
 #pragma region Game specifics
-class MovementController : public Component {
 
+class Joystick : public Component{
 private:
-    Rigidbody2D *rigidbody;
     SDL_Keycode upKey, downKey, leftKey, rightKey;
 
     float upSpeed = 0, downSpeed = 0, leftSpeed = 0, rightSpeed = 0;
 
+    Vector2 direction = Vector2(0, 0);
 public:
-    float speed = 0;
-    float jumpForce = 0;
+    Joystick(GameObject *parent, SDL_Keycode upKey, SDL_Keycode downKey, SDL_Keycode leftKey, SDL_Keycode rightKey) : Component(parent) {
+        this->upKey = upKey;
+        this->downKey = downKey;
+        this->leftKey = leftKey;
+        this->rightKey = rightKey;
+    }
 
-    MovementController(GameObject *parent, float speed, float jumpForce, bool useWASD) : Component(parent) {
-        this->speed = speed;
-        this->jumpForce = jumpForce;
-        this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
+    void SetKey(SDL_Keycode upKey, SDL_Keycode downKey, SDL_Keycode leftKey, SDL_Keycode rightKey){
+        this->upKey = upKey;
+        this->downKey = downKey;
+        this->leftKey = leftKey;
+        this->rightKey = rightKey;
+    }
 
-        if (useWASD) {
-            upKey = SDLK_w;
-            downKey = SDLK_s;
-            leftKey = SDLK_a;
-            rightKey = SDLK_d;
-        } else {
-            upKey = SDLK_UP;
-            downKey = SDLK_DOWN;
-            leftKey = SDLK_LEFT;
-            rightKey = SDLK_RIGHT;
-        }
+    Vector2 GetDirection(){
+        direction = Vector2(leftSpeed + rightSpeed, upSpeed + downSpeed);
+        return direction.Normalize();
     }
 
     void Update() {
         if (!enabled)
             return;
-        if (rigidbody == nullptr)
-            return;
-
-        float actualSpeed = speed * 1 / FPS;
 
         if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
             if (Game::event.key.keysym.sym == upKey) {
-                upSpeed = (Game::event.type == SDL_KEYDOWN ? -1 : 0) * jumpForce;
+                upSpeed = Game::event.type == SDL_KEYDOWN ? -1 : 0;
             }
             if (Game::event.key.keysym.sym == downKey) {
                 downSpeed = Game::event.type == SDL_KEYDOWN ? 1 : 0;
@@ -165,48 +159,161 @@ public:
                 rightSpeed = Game::event.type == SDL_KEYDOWN ? 1 : 0;
             }
         }
+    }
 
-        // Vector2 force = Vector2(leftSpeed + rightSpeed, 0).Normalize() * actualSpeed + Vector2(0, upSpeed);
-        Vector2 force = Vector2(leftSpeed + rightSpeed, 0).Normalize() * actualSpeed + Vector2(0, 0);
+    void Draw() {}
+
+    Component *Clone(GameObject *parent) {
+        Joystick *newJoystick = new Joystick(parent, upKey, downKey, leftKey, rightKey);
+        return newJoystick;
+    }
+};
+
+class MovementController : public Component {
+
+private:
+    Rigidbody2D *rigidbody = nullptr;
+
+    Joystick* joystick = nullptr;
+public:
+    float speed = 0;
+    float jumpForce = 0;
+
+    MovementController(GameObject *parent, float speed, float jumpForce, Joystick* joystick) : Component(parent) {
+        this->speed = speed;
+        this->jumpForce = jumpForce;
+
+        this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
+        this->joystick = this->gameObject->GetComponent<Joystick>();
+
+        SDL_KeyCode upKey, downKey, leftKey, rightKey;
+
+        this->joystick = joystick;
+    }
+
+    void Update() {
+        if (!enabled)
+            return;
+        if (rigidbody == nullptr){
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+            if (rigidbody == nullptr)
+                return;
+        }
+        if (joystick == nullptr){
+            joystick = gameObject->GetComponent<Joystick>();
+            if (joystick == nullptr)
+                return;
+        }
+
+        float actualSpeed = speed * 1 / FPS;
+
+        Vector2 direction = joystick->GetDirection();
+
+        Vector2 force = Vector2(direction.x, 0).Normalize() * actualSpeed;
 
         if (force.Magnitude() > VELOCITY_EPS) {
             rigidbody->AddForce(force);
         }
-        // else{
-        //     //If not moving horizontally, remove horizontal speed for snappy movement
-        //     rigidbody->velocity -= Vector2::ProjectToVector(rigidbody->velocity, Vector2(1, 0));
-        // }
-    }
-
-    Vector2 extractSpeed() {
-        return Vector2(leftSpeed + rightSpeed, upSpeed + downSpeed);
     }
 
     void Enable() {
-        ClearSpeed();
         enabled = true;
     }
     void Disable() {
-        ClearSpeed();
         enabled = false;
     }
     bool GetEnabled() {
         return enabled;
     }
 
-    void ClearSpeed() {
-        upSpeed = 0;
-        downSpeed = 0;
-        leftSpeed = 0;
-        rightSpeed = 0;
+    void Draw() {}
+
+    Component *Clone(GameObject *parent) {
+        MovementController *newMovementController = new MovementController(parent, speed, jumpForce, joystick);
+        return newMovementController;
+    }
+};
+
+/*Grounded condition:
+*/
+class JumpController : public Component {
+private:
+    Rigidbody2D *rigidbody = nullptr;
+
+    SDL_KeyCode jumpKey;
+    float jumpForce = 0;
+    
+    float cooldown = 0;
+    float lastJumpTime = 0;
+    bool grounded = false;
+
+    CollisionMatrix::Layers groundLayer = CollisionMatrix::DEFAULT;
+    
+    Vector2 lastNormal = Vector2(0, 0);
+
+    void OnCollisionEnter(Collider2D *collider) {
+        grounded = false;
+        lastNormal = Vector2(0, 0);
+
+        if (SDL_GetTicks() - lastJumpTime < cooldown) return;
+        if (collider->gameObject->layer != groundLayer) return;
+        
+        // > 0 for wall jump
+        Vector2 normal = collider->GetNormal(gameObject->transform.position);
+        lastNormal = normal;
+        if (normal.y > 0) return;
+
+        grounded = true;
+    }
+public:
+
+    JumpController(GameObject *parent, SDL_KeyCode jumpKey, 
+                float jumpForce, float cooldown, CollisionMatrix::Layers whatIsGround) : Component(parent) {
+        this->jumpKey = jumpKey;
+        this->jumpForce = jumpForce;
+        this->cooldown = cooldown;
+
+        this->groundLayer = whatIsGround;
+
+        this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
+    }
+
+    void Update() {
+        if (!enabled)
+            return;
+        if (rigidbody == nullptr){
+            rigidbody = gameObject->GetComponent<Rigidbody2D>();
+            if (rigidbody == nullptr)
+                return;
+        }
+
+        if (SDL_GetTicks() - lastJumpTime < cooldown) return;
+        if (Game::event.type == SDL_KEYDOWN) {
+            if (Game::event.key.keysym.sym == jumpKey && grounded) {
+                Vector2 direction = Vector2(0, -1);
+                if (lastNormal.x != 0)
+                    direction += lastNormal / 4;
+                
+                rigidbody->AddForce(direction.Normalize() * jumpForce);
+                grounded = false;
+                lastJumpTime = SDL_GetTicks();
+            }
+        }
     }
 
     void Draw() {}
 
-    Component *Clone(GameObject *parent) {
-        MovementController *newMovementController = new MovementController(parent, speed, jumpForce, upKey == SDLK_w);
-        return newMovementController;
+    void BindCollider(Collider2D *collider) {
+        collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+            OnCollisionEnter(collider);
+        });
     }
+
+    Component *Clone(GameObject *parent) {
+        JumpController *newJumpController = new JumpController(parent, jumpKey, jumpForce, cooldown, groundLayer);
+        return newJumpController;
+    }
+
 };
 
 class PlayerAnimController : public Component {
@@ -304,8 +411,6 @@ class PlayerShoot : public Component {
 private:
     std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell = nullptr;
     
-    SDL_KeyCode shootKey;
-    
     float shellSpeed = 0;
     float shellLifetime = 0;
 
@@ -320,11 +425,11 @@ private:
     Vector2 lastDirection = Vector2(0, 1);
 
     ParticleSystem *particleSystem = nullptr;
-public:
-    PlayerShoot(GameObject *parent, SDL_KeyCode shootKey, float shellSpeed, float shellLifeTime, float shootCooldown, 
-                float shootAmount, float shootAngle) : Component(parent) {
-        this->shootKey = shootKey;
 
+    Joystick *joystick = nullptr;
+public:
+    PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, 
+                float shootAmount, float shootAngle, Joystick *joystick) : Component(parent) {
         this->shellSpeed = shellSpeed;
         this->shellLifetime = shellLifeTime;
 
@@ -333,6 +438,7 @@ public:
         this->shootAngle = shootAngle;
 
         particleSystem = gameObject->GetComponent<ParticleSystem>();
+        this->joystick = joystick;
     }
 
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell) {
@@ -341,20 +447,18 @@ public:
 
     void Update() {
         if (createShell == nullptr) return;
-
-        static bool shoot = false;
-        if (Game::event.type == SDL_KEYDOWN || Game::event.type == SDL_KEYUP) {
-            if (Game::event.key.keysym.sym == shootKey) {
-                shoot = Game::event.type == SDL_KEYDOWN;
-            }
+        if (joystick == nullptr){
+            joystick = gameObject->GetComponent<Joystick>();
+            if (joystick == nullptr) return;
         }
 
-        MovementController* movementController = gameObject->GetComponent<MovementController>();
-        if (!movementController) return;
+        bool shoot = false;
 
         //Get shoot direction
-        if (movementController->extractSpeed().Magnitude() > VELOCITY_EPS)
-            lastDirection = movementController->extractSpeed().Normalize();
+        if (joystick->GetDirection().Magnitude() > VELOCITY_EPS){
+            shoot = true;
+            lastDirection = joystick->GetDirection().Normalize();
+        }
 
         if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown) {
 
@@ -378,11 +482,10 @@ public:
     void Draw() {}
 
     Component *Clone(GameObject *parent) {
-        PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shootKey, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle);
+        PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick);
         return newPlayerShoot;
     }
 };
-
 class Orbit : public Component {
 private:
     GameObject *target = nullptr;
@@ -391,28 +494,29 @@ private:
 
     SpriteRenderer *spRenderer = nullptr;
 
-    MovementController *movementController = nullptr;
     Vector2 lastDirection = Vector2(0, 1);
 
     Vector2 originalForward = Vector2(0, 1);
+
+    Joystick *joystick = nullptr;
 public:
-    Orbit(GameObject *parent, GameObject *target, float radius, Vector2 originalForward) : Component(parent) {
+    Orbit(GameObject *parent, GameObject *target, float radius, Vector2 originalForward, Joystick *joystick) : Component(parent) {
         this->target = target;
         this->radius = radius;
         this->originalForward = originalForward;
         lastDirection = originalForward;
 
         spRenderer = gameObject->GetComponent<SpriteRenderer>();
-        movementController = target->GetComponent<MovementController>();
+        this->joystick = joystick;
     }
 
     void Update() {
         if (target == nullptr)
             return;
 
-        if (!movementController){
-            movementController = target->GetComponent<MovementController>();
-            if (!movementController) return;
+        if (joystick == nullptr){
+            joystick = gameObject->GetComponent<Joystick>();
+            if (joystick == nullptr) return;
         }
 
         if (!spRenderer){
@@ -420,8 +524,8 @@ public:
             if (!spRenderer) return;
         }
 
-        if (movementController->extractSpeed().Magnitude() > VELOCITY_EPS)
-            lastDirection = movementController->extractSpeed().Normalize();
+        if (joystick->GetDirection().Magnitude() > VELOCITY_EPS)
+            lastDirection = joystick->GetDirection().Normalize();
         
         angle = Vector2::SignedAngle(originalForward, lastDirection);
         gameObject->transform.position = target->transform.position + Vector2::Rotate(originalForward, angle) * radius;
@@ -434,7 +538,7 @@ public:
     void Draw() {}
 
     Component *Clone(GameObject *parent) {
-        Orbit *newOrbit = new Orbit(parent, target, radius, originalForward);
+        Orbit *newOrbit = new Orbit(parent, target, radius, originalForward, joystick);
         return newOrbit;
     }
 };
