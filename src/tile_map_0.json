@@ -1,0 +1,7 @@
+{
+    "tileMap": [
+        [ {"type": "land", "index": 0}, {"type": "water", "index": 1}, {"type": "wall", "index": 2} ],
+        [ {"type": "land", "index": 0}, {"type": "wall", "index": 2}, {"type": "water", "index": 1} ],
+        [ {"type": "water", "index": 1}, {"type": "land", "index": 0}, {"type": "wall", "index": 2} ]
+    ]
+}

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <algorithm>
 #include <list>
+#include <json/json.h>
+#include <fstream>
 
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
@@ -726,6 +728,109 @@ void SoundManager::ResumeSound() {
     Mix_Resume(-1);
 }
 
+#pragma endregion
 
+#pragma region TileMap
+
+TileMap::TileMap() : tileMapSheet(nullptr), mapSize(0, 0), tileSize(0, 0), cameraPos(0, 0) {}
+
+TileMap::~TileMap() {}
+
+TileMap* TileMap::GetInstance() {
+    if (instance == nullptr) {
+        instance = new TileMap();
+    }
+    return instance;
+}
+
+void TileMap::InitSheet(std::string sheetPath, std::string jsonPath, Vector2 mapSize, Vector2 tileSize) {
+    tileMapSheet = LoadSpriteSheet(sheetPath);
+    this->mapSize = mapSize;
+    this->tileSize = tileSize;
+
+    // Load and parse the JSON file using JsonCpp
+    std::ifstream jsonFile(jsonPath, std::ifstream::binary);
+    Json::Value root;
+    jsonFile >> root;
+
+    // Initialize tileTypes from JSON data
+    for (const auto& tileData : root["tiles"]) {
+        std::string type = tileData["type"].asString();
+        int posX = tileData["posX"].asInt();
+        int posY = tileData["posY"].asInt();
+        int layer = tileData["layer"].asInt();
+        bool hasCollider = tileData.isMember("collider") ? tileData["collider"].asBool() : false;
+
+        BoxCollider2D* collider = hasCollider ? new BoxCollider2D(this, Vector2(posX, posY), tileSize) : nullptr;
+        tileTypes[type].push_back(Tile({posX, posY}, collider, layer));
+    }
+}
+
+void TileMap::LoadTileMap(std::string mapPath) {
+    // Load and parse the JSON file using JsonCpp
+    std::ifstream jsonFile(mapPath, std::ifstream::binary);
+    Json::Value root;
+    jsonFile >> root;
+
+    // Initialize tileMap from JSON data
+    const Json::Value& jsonTileMap = root["tileMap"];
+    tileMap.resize(jsonTileMap.size());
+
+    for (Json::Value::ArrayIndex i = 0; i < jsonTileMap.size(); ++i) {
+        const Json::Value& row = jsonTileMap[i];
+        tileMap[i].resize(row.size());
+        for (Json::Value::ArrayIndex j = 0; j < row.size(); ++j) {
+            tileMap[i][j].first = row[j]["type"].asString();
+            tileMap[i][j].second = row[j]["index"].asInt();
+        }
+    }
+}
+
+void TileMap::SetTile(int x, int y, const std::string tileType, int tileIndex) {
+    if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) return;
+
+    if (tileTypes.find(tileType) != tileTypes.end()) {
+        tileMap[y][x] = { tileType, tileIndex };
+    }
+}
+
+Tile TileMap::GetTile(int x, int y) {
+    if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) return {};
+
+    return tileTypes[tileMap[y][x].first].at(tileMap[y][x].second);
+}
+
+void TileMap::Update() {}
+
+void TileMap::Draw() {
+    if (!tileMapSheet) return;
+
+    int startX = static_cast<int>(cameraPos.x / tileSize.x);
+    int startY = static_cast<int>(cameraPos.y / tileSize.y);
+    int endX = static_cast<int>((cameraPos.x + WIDTH) / tileSize.x);
+    int endY = static_cast<int>((cameraPos.y + HEIGHT) / tileSize.y);
+
+    for (int y = startY; y <= endY && y < mapSize.y; ++y) {
+        for (int x = startX; x <= endX && x < mapSize.x; ++x) {
+            const auto& tileInfo = tileMap[y][x];
+            if (tileTypes.find(tileInfo.first) == tileTypes.end()) continue;
+
+            Tile& tile = tileTypes[tileInfo.first].at(tileInfo.second);
+            SDL_Rect srcRect = {
+                tile.tilePosInSheet.first * static_cast<int>(tileSize.x),
+                tile.tilePosInSheet.second * static_cast<int>(tileSize.y),
+                static_cast<int>(tileSize.x),
+                static_cast<int>(tileSize.y)
+            };
+            SDL_Rect dstRect = {
+                static_cast<int>((x * tileSize.x) - cameraPos.x),
+                static_cast<int>((y * tileSize.y) - cameraPos.y),
+                static_cast<int>(tileSize.x),
+                static_cast<int>(tileSize.y)
+            };
+            SDL_RenderCopy(RENDERER, tileMapSheet, &srcRect, &dstRect);
+        }
+    }
+}
 
 #pragma endregion
