@@ -80,7 +80,6 @@ public:
 
         if (animator->GetCurrentClip()->GetName() != animName) return;
 
-        std::cout <<useRB<<std::endl;
         if (useRB){
             if (rigidbody->velocity.Magnitude() > VELOCITY_EPS){
                 if (animator->GetCurrentClip()->isPlaying == false)
@@ -101,7 +100,6 @@ public:
         }
         else{
             Vector2 velocity = (gameObject->transform.position - lastPosition);
-            std::cout<<velocity.Magnitude()<<std::endl;
 
             if ((gameObject->transform.position - lastPosition).Magnitude() > VELOCITY_EPS * 10){
                 if (animator->GetCurrentClip()->isPlaying == false)
