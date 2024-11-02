@@ -307,6 +307,14 @@ void ShellBehavior::Update() {
 
 void ShellBehavior::Draw() {}
 
+void ShellBehavior::SetSender(GameObject *sender){
+    this->sender = sender;
+}
+
+GameObject *ShellBehavior::GetSender(){
+    return sender;
+}
+
 Component *ShellBehavior::Clone(GameObject *parent) {
     ShellBehavior *newShellBehavior = new ShellBehavior(parent, lifeTime, speed, direction);
     return newShellBehavior;
@@ -358,6 +366,7 @@ void PlayerShoot::Update() {
             Vector2 direction = Vector2::Rotate(lastDirection, (rand() % (int)shootAngle * 2 - (int)shootAngle));
 
             GameObject *shell = createShell(shellSpeed, direction, shellLifetime, gameObject->transform.position);
+            shell->GetComponent<ShellBehavior>()->SetSender(gameObject);
 
             GameObjectManager::GetInstance()->AddGameObject(shell);
         }
@@ -510,4 +519,65 @@ void Camera::SetFollow(GameObject *follow) {
 Component *Camera::Clone(GameObject *parent) {
     Camera *newCamera = new Camera(parent, follow, size, offset, speed, deadZone);
     return newCamera;
+}
+
+HPController::HPController(GameObject *parent, int maxHP, float invincibleTime) : Component(parent) {
+    this->maxHP = maxHP;
+    this->currentHP = maxHP;
+
+    this->invincibleTime = invincibleTime;
+    this->lastDamageTime = lastDamageTime;
+}
+
+void HPController::Update() {
+    if (isDead)
+        return;
+    if (currentHP <= 0) {
+        isDead = true;
+        GameObject::Destroy(gameObject->GetName());
+    }
+}
+
+void HPController::Draw() {}
+
+void HPController::TakeDamage(int damage) {
+    if (isInvincible || isDead || SDL_GetTicks() - lastDamageTime < invincibleTime)
+        return;
+    lastDamageTime = SDL_GetTicks();
+    currentHP -= damage;
+    OnDamage.raise();
+    if (currentHP <= 0) {
+        isDead = true;
+        OnDeath.raise();
+        GameObject::Destroy(gameObject->GetName());
+    }
+}
+
+void HPController::Heal(int amount) {
+    if (isDead)
+        return;
+    currentHP += amount;
+    if (currentHP > maxHP)
+        currentHP = maxHP;
+}
+
+void HPController::SetInvincible(bool invincible) {
+    isInvincible = invincible;
+}
+
+void HPController::SetParticleSystem(ParticleSystem *particleSystem) {
+    this->particleSystem = particleSystem;
+}
+
+int &HPController::GetHPRef() {
+    return currentHP;
+}
+
+bool HPController::IsDead() {
+    return isDead;
+}
+
+Component *HPController::Clone(GameObject *parent) {
+    HPController *newHPController = new HPController(parent, maxHP, invincibleTime);
+    return newHPController;
 }

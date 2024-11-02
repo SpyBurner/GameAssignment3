@@ -112,10 +112,16 @@ private:
     float speed;
     Vector2 direction;
 
+    GameObject *sender = nullptr;
 public:
     ShellBehavior(GameObject *parent, float lifeTime, float speed, Vector2 direction);
+
     void Update();
     void Draw();
+
+    void SetSender(GameObject *sender);
+    GameObject * GetSender();
+
     Component *Clone(GameObject *parent);
 };
 
@@ -187,6 +193,36 @@ public:
     Vector2 WorldToScreen(Vector2 worldPos);
     Vector2 ScreenToWorld(Vector2 screenPos);
     void SetFollow(GameObject *follow);
+    Component *Clone(GameObject *parent);
+};
+
+class HPController : public Component {
+private:
+    int maxHP;
+    int currentHP;
+    bool isDead = false;
+    bool isInvincible = false;
+
+    float invincibleTime = 0;
+    float lastDamageTime = 0;
+
+    ParticleSystem *particleSystem = nullptr;
+public:
+    Event<> OnDeath = Event<>();
+    Event<> OnDamage = Event<>();
+    HPController(GameObject *parent, int maxHP, float invincibleTime);
+
+    void Update();
+    void Draw();
+    void TakeDamage(int damage);
+    void Heal(int amount);
+
+    void SetInvincible(bool invincible);
+    void SetParticleSystem(ParticleSystem *particleSystem);
+
+    int &GetHPRef();
+    bool IsDead();
+
     Component *Clone(GameObject *parent);
 };
 

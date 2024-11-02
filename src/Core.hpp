@@ -22,11 +22,12 @@ public:
     enum Layers {
         PLAYER = 1,
         ENEMY = 2,
-        PROJECTILE = 4,
-        WALL = 8,
-        CAMERA = 16,
-        PARTICLE = 32,
-        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL | CAMERA | PARTICLE
+        PROJECTILE = 3,
+        E_PROJECTILE = 4,
+        WALL = 5,
+        CAMERA = 6,
+        PARTICLE = 7,
+        DEFAULT = 0
     };
 
     static void init();
