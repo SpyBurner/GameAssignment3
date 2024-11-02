@@ -7,260 +7,63 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
-
 // Player cosmetics
 class RotateTowardVelocity : public Component {
 private:
-    Vector2 originalForward = Vector2(0, -1);
+    Vector2 originalForward;
     Rigidbody2D *rigidbody = nullptr;
-    
-    Vector2 lastVelocity = Vector2(0, -1);
+    Vector2 lastVelocity;
 
-    void Update(){
-        if (rigidbody == nullptr){
-            rigidbody = gameObject->GetComponent<Rigidbody2D>();
-        }
-        if (rigidbody == nullptr) return;
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
 
-        if (rigidbody->velocity.Magnitude() > 0.1f) lastVelocity = rigidbody->velocity;
-        gameObject->transform.rotation = Vector2::SignedAngle(originalForward, lastVelocity);
-    }
-
-    void Draw() {}
-
-    Component *Clone(GameObject *parent) {
-        RotateTowardVelocity *newRotateTowardVelocity = new RotateTowardVelocity(parent, originalForward);
-        return newRotateTowardVelocity;
-    }
 public:
-    RotateTowardVelocity(GameObject *parent, Vector2 originalForward) : Component(parent) {
-        this->originalForward = originalForward;
-        rigidbody = gameObject->GetComponent<Rigidbody2D>();
-    }
+    RotateTowardVelocity(GameObject *parent, Vector2 originalForward);
 };
 
-/* Use difference in position, or rigidbody
-*/
+/* Use difference in position, or rigidbody */
 class VelocityToAnimSpeedController : public Component {
 private:
-    // Main Rigidbody to get speed from
     Rigidbody2D *rigidbody = nullptr;
-
-    // Backup Rigidbody to get speed from if the main Rigidbody is not moving
-    Rigidbody2D* backupRigidbody = nullptr;
-
-    Animator *animator = nullptr;
+    Rigidbody2D* backupRigidbody  = nullptr;
+    Animator *animator  = nullptr;
     std::string animName;
-
-    float speedMultiplier = 1.0f;
-
-    Vector2 lastPosition = Vector2(0, 0);
-
+    float speedMultiplier;
+    Vector2 lastPosition;
     bool useRB;
+
 public:
-    VelocityToAnimSpeedController(GameObject *parent, std::string animName, float speedMultiplier = 1.0f, bool useRB = true) : Component(parent) {
-        this->animName = animName;
-        this->backupRigidbody = backupRigidbody;
-        this->speedMultiplier = speedMultiplier;
-
-        this->useRB = useRB;
-
-        lastPosition = gameObject->transform.position;
-    }
-
-    ~VelocityToAnimSpeedController() {}
-
-    void Update() {
-        if (rigidbody == nullptr || animator == nullptr){
-            rigidbody = gameObject->GetComponent<Rigidbody2D>();
-            animator = gameObject->GetComponent<Animator>();
-        }
-
-        if (rigidbody == nullptr || animator == nullptr) return;
-
-        if (animator->GetCurrentClip()->GetName() != animName) return;
-
-        if (useRB){
-            if (rigidbody->velocity.Magnitude() > VELOCITY_EPS){
-                if (animator->GetCurrentClip()->isPlaying == false)
-                    animator->Play(animName);
-                animator->GetCurrentClip()->speedScale = rigidbody->velocity.Magnitude() * speedMultiplier;
-            }
-            else{
-                if (backupRigidbody != nullptr && backupRigidbody->velocity.Magnitude() >VELOCITY_EPS){
-                    if (animator->GetCurrentClip()->GetName() == animName && animator->GetCurrentClip()->isPlaying == false)
-                        animator->Play(animName);
-                    animator->GetCurrentClip()->speedScale = backupRigidbody->velocity.Magnitude() * speedMultiplier;
-                }
-                else{
-                    animator->GetCurrentClip()->speedScale = 1.0;
-                    animator->Stop();
-                }
-            }
-        }
-        else{
-            Vector2 velocity = (gameObject->transform.position - lastPosition);
-
-            if ((gameObject->transform.position - lastPosition).Magnitude() > VELOCITY_EPS * 10){
-                if (animator->GetCurrentClip()->isPlaying == false)
-                    animator->Play(animName);
-                animator->GetCurrentClip()->speedScale = (gameObject->transform.position - lastPosition).Magnitude() * speedMultiplier;
-            }
-            else{
-                animator->GetCurrentClip()->speedScale = 1.0;
-                animator->Stop();
-            }
-        }
-        lastPosition = gameObject->transform.position;
-    }
-
-    void Draw() {}
-
-    void SetBackupRigidbody(Rigidbody2D* backupRigidbody){
-        this->backupRigidbody = backupRigidbody;
-    }
-
-    Component *Clone(GameObject *parent) {
-        VelocityToAnimSpeedController *newRollSpeedController = new VelocityToAnimSpeedController(parent, this->animName, this->speedMultiplier, this->useRB);
-        return newRollSpeedController;
-    }
+    VelocityToAnimSpeedController(GameObject *parent, std::string animName, float speedMultiplier = 1.0f, bool useRB = true);
+    ~VelocityToAnimSpeedController();
+    void Update();
+    void Draw();
+    void SetBackupRigidbody(Rigidbody2D* backupRigidbody);
+    Component *Clone(GameObject *parent);
 };
 
 class StayInBounds : public Component {
 public:
-    bool teleport = false;
-    StayInBounds(GameObject *parent, bool teleport) : Component(parent) {
-        this->teleport = teleport;
-    }
-
-    ~StayInBounds() {}
-
-    void Update() {
-        Rigidbody2D *rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
-        bool bounced = false;
-        if (this->gameObject->transform.position.x < 0) {
-            if (teleport){
-                this->gameObject->transform.position.x = WIDTH;
-            }
-            else{
-                if (rigidbody != nullptr){
-                    rigidbody->BounceOff(Vector2(1, 0));
-                    bounced = true;
-                }
-                else
-                    this->gameObject->transform.position.x = 0;
-            }
-        }
-        if (this->gameObject->transform.position.x > WIDTH) {
-            if (teleport){
-                this->gameObject->transform.position.x = 0;
-            }
-            else{
-                if (rigidbody != nullptr){
-                    rigidbody->BounceOff(Vector2(-1, 0));
-                    bounced = true;
-                }
-                else
-                    this->gameObject->transform.position.x = WIDTH;
-            }
-        }
-        if (this->gameObject->transform.position.y < 0) {
-            if (teleport){
-                this->gameObject->transform.position.y = HEIGHT;
-            }
-            else{
-                if (rigidbody != nullptr){
-                    rigidbody->BounceOff(Vector2(0, 1));
-                    bounced = true;
-                }
-                else
-                    this->gameObject->transform.position.y = 0;
-            }
-        }
-        if (this->gameObject->transform.position.y > HEIGHT) {
-            if (teleport){
-                this->gameObject->transform.position.y = 0;
-            }
-            else{
-                if (rigidbody != nullptr){
-                    rigidbody->BounceOff(Vector2(0, -1));
-                    bounced = true;
-                }
-                else
-                    this->gameObject->transform.position.y = HEIGHT;
-            }
-        }
-    }
-
-    void Draw() {}
-
-    Component *Clone(GameObject *parent) {
-        StayInBounds *newStayInBounds = new StayInBounds(parent, this->teleport);
-        return newStayInBounds;
-    }
+    bool teleport;
+    StayInBounds(GameObject *parent, bool teleport);
+    ~StayInBounds();
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
 };
 
-SDL_Texture* LoadFontTexture(const std::string& text, const std::string& fontPath, SDL_Color color, int fontSize) {
-    // Load the font
-    TTF_Font* font = TTF_OpenFont(fontPath.c_str(), fontSize);
-    if (!font) {
-        std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
-        return nullptr;
-    }
+SDL_Texture* LoadFontTexture(const std::string& text, const std::string& fontPath, SDL_Color color, int fontSize);
+void RenderTexture(SDL_Texture* texture, int x, int y);
 
-    // Render the text to a surface
-    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), color);
-    if (!textSurface) {
-        std::cerr << "Failed to create text surface: " << TTF_GetError() << std::endl;
-        TTF_CloseFont(font);
-        return nullptr;
-    }
-
-    // Create a texture from the surface
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(RENDERER, textSurface);
-    if (!textTexture) {
-        std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
-    }
-
-    // Clean up
-    SDL_FreeSurface(textSurface);
-    TTF_CloseFont(font);
-
-    return textTexture;
-}
-
-void RenderTexture(SDL_Texture* texture, int x, int y) {
-    if (!texture) {
-        std::cerr << "Texture is null" << std::endl;
-        return;
-    }
-
-    // Query the texture to get its width and height
-    int width, height;
-    SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
-
-    // Define the destination rectangle
-    SDL_Rect destRect = { x - width/2, y - height/2, width, height };
-
-    // Render the texture
-    SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
-}
-
-class PositionTracker : public Component{
-private:
+class PositionTracker : public Component {
 public:
-    PositionTracker(GameObject *parent) : Component(parent) {}
-
-    void Update(){
-        std::cout << "Position x: " << gameObject->transform.position.x << " y: " << gameObject->transform.position.y << std::endl;
-    }
-
-    void Draw() {}
-
-    Component *Clone(GameObject *parent) {
-        PositionTracker *newPositionTracker = new PositionTracker(parent);
-        return newPositionTracker;
-    }
+    PositionTracker(GameObject *parent);
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
 };
+
+SDL_Texture *LoadFontTexture(const std::string &text, const std::string &fontPath, SDL_Color color, int fontSize);
+void RenderTexture(SDL_Texture *texture, int x, int y);
 
 #endif // HELPER_HPP

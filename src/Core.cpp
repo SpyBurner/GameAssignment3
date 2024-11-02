@@ -1,6 +1,7 @@
 #include "Core.hpp"
 #include "Global.hpp"
 #include "Physic2D.hpp"
+#include "Components.hpp"
 #include <cmath>
 #include <iostream>
 #include <algorithm>
@@ -319,7 +320,8 @@ Component::~Component() {}
 //     SpriteRenderer::renderer = renderer;
 // }
 
-SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, int drawOrder, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, 
+    int drawOrder, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
     this->drawOrder = drawOrder;
 
     this->spriteSheet = spriteSheet;
@@ -358,12 +360,29 @@ void SpriteRenderer::Draw() {
     destRect.w = spriteRect.w * transform->scale.x;
     destRect.h = spriteRect.h * transform->scale.y;
 
+    if (Game::CAMERA) {
+        SDL_Rect drawCheckRect;
+        drawCheckRect.x = gameObject->transform.position.x - spriteRect.w * transform->scale.x / 2;
+        drawCheckRect.y = gameObject->transform.position.y - spriteRect.h * transform->scale.y / 2;
+        drawCheckRect.w = spriteRect.w * transform->scale.x;
+        drawCheckRect.h = spriteRect.h * transform->scale.y;
+
+        if (!Game::CAMERA->GetComponent<Collider2D>()->CheckCollision(drawCheckRect)) {
+            return;
+        }
+
+        Vector2 newPos = Game::CAMERA->GetComponent<Camera>()->WorldToScreen(Vector2(destRect.x, destRect.y));
+        destRect.x = newPos.x;
+        destRect.y = newPos.y;
+    }
+
     // Copy the sprite to the renderer
     // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
     // CANNOT FLIP BOTH H AND V
     SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, 
         ((isFlippedH)? SDL_FLIP_HORIZONTAL : ((isFlippedV)? SDL_FLIP_VERTICAL : SDL_FLIP_NONE)));
 }
+
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
     SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), drawOrder, spriteSheet);

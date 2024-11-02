@@ -11,6 +11,7 @@
 #include <SDL2/SDL_mixer.h>
 
 SDL_Event Game::event;
+GameObject *Game::CAMERA = nullptr;
 
 Game::Game() {
     isRunning = false;
@@ -105,6 +106,38 @@ void Game::objectInit() {
         wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(7500, 60), false));
 
         GameObjectManager::GetInstance()->AddGameObject(wall);
+
+        //Test culling
+        // // Wall 1
+        // GameObject *wall1 = new GameObject("Wall1");
+        // wall1->layer = CollisionMatrix::WALL;
+        // wall1->transform.rotation = 0;
+        // wall1->transform.position = Vector2(0, 600);
+        // wall1->transform.scale = Vector2(100, 2);
+        // wall1->AddComponent(new SpriteRenderer(wall1, Vector2(100, 10), 0, LoadSpriteSheet("Assets/wall.png")));
+        // wall1->AddComponent(new BoxCollider2D(wall1, Vector2(0, 0), Vector2(100, 10), false));
+        // GameObjectManager::GetInstance()->AddGameObject(wall1);
+
+        // // Wall 2
+        // GameObject *wall2 = new GameObject("Wall2");
+        // wall2->layer = CollisionMatrix::WALL;
+        // wall2->transform.rotation = 0;
+        // wall2->transform.position = Vector2(0, 550);
+        // wall2->transform.scale = Vector2(100, 2);
+        // wall2->AddComponent(new SpriteRenderer(wall2, Vector2(100, 20), 0, LoadSpriteSheet("Assets/wall.png")));
+        // wall2->AddComponent(new BoxCollider2D(wall2, Vector2(0, 0), Vector2(100, 20), false));
+        // GameObjectManager::GetInstance()->AddGameObject(wall2);
+
+        // // Wall 3
+        // GameObject *wall3 = new GameObject("Wall3");
+        // wall3->layer = CollisionMatrix::WALL;
+        // wall3->transform.rotation = 0;
+        // wall3->transform.position = Vector2(0, 400);
+        // wall3->transform.scale = Vector2(100, 2);
+        // wall3->AddComponent(new SpriteRenderer(wall3, Vector2(100, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        // wall3->AddComponent(new BoxCollider2D(wall3, Vector2(0, 0), Vector2(100, 30), false));
+        // GameObjectManager::GetInstance()->AddGameObject(wall3);
+
         // Left Wall
         GameObject *leftWall = new GameObject("LeftWall");
         leftWall->layer = CollisionMatrix::WALL;
@@ -137,7 +170,7 @@ void Game::objectInit() {
     dropShellParticle->AddComponent(new Rigidbody2D(dropShellParticle, 1, 0.025, 0, 1.0));
     dropShellParticle->AddComponent(new CircleCollider2D(dropShellParticle, Vector2(0, 0), 3, true));
     dropShellParticle->AddComponent(new Animator(dropShellParticle, {
-        AnimationClip("Default", "Assets/Sprites/shell_particle.png", Vector2(5, 5), 100, true, 1.0, 0, 3),
+        AnimationClip("Default", "Assets/Sprites/Player/shell_particle.png", Vector2(5, 5), 100, true, 1.0, 0, 3),
     }));
     dropShellParticle->AddComponent(new VelocityToAnimSpeedController(dropShellParticle, "Default", 1.0, false));
 
@@ -150,7 +183,7 @@ void Game::objectInit() {
     shellParticle->AddComponent(new CircleCollider2D(shellParticle, Vector2(0, 0), 3, true));
 
     shellParticle->AddComponent(new Animator(shellParticle, {
-        AnimationClip("Default", "Assets/Sprites/shell_trail.png", Vector2(3, 3), 100, true, 1.0, 0, 1),
+        AnimationClip("Default", "Assets/Sprites/Player/shell_trail.png", Vector2(3, 3), 100, true, 1.0, 0, 1),
     }));
 
     auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
@@ -159,7 +192,7 @@ void Game::objectInit() {
         shell->layer = CollisionMatrix::PROJECTILE;
         shell->transform.position = position;
 
-        shell->AddComponent(new SpriteRenderer(shell, Vector2(5, 4), 10, LoadSpriteSheet("Assets/Sprites/shell.png")));
+        shell->AddComponent(new SpriteRenderer(shell, Vector2(5, 4), 10, LoadSpriteSheet("Assets/Sprites/Player/shell.png")));
 
         shell->AddComponent(new ParticleSystem(shell, shellParticle, 50, 500, -1 * direction, 0, 0));
 
@@ -189,8 +222,8 @@ void Game::objectInit() {
         player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, nullptr));
 
         player->AddComponent(new Animator(player, 
-            {AnimationClip("Idle", "Assets/Sprites/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
-            AnimationClip("Walk", "Assets/Sprites/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
+            {AnimationClip("Idle", "Assets/Sprites/Player/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
+            AnimationClip("Walk", "Assets/Sprites/Player/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
         }));
 
         player->GetComponent<Animator>()->Play("Idle");
@@ -204,7 +237,7 @@ void Game::objectInit() {
             player->AddComponent(new Joystick(player, SDLK_w, SDLK_s, SDLK_a, SDLK_d))
         );
 
-        player->AddComponent(new MovementController(player, 18, .5, movementStick));
+        player->AddComponent(new MovementController(player, 18, movementStick));
 
         player->AddComponent(new PlayerAnimController(player));
         
@@ -234,11 +267,25 @@ void Game::objectInit() {
     gun->transform.position = Vector2(640, 100);
     gun->transform.scale = Vector2(1.5, 1.5);
 
-    gun->AddComponent(new SpriteRenderer(gun, Vector2(16, 16), 11, LoadSpriteSheet("Assets/Sprites/gun.png")));
+    gun->AddComponent(new SpriteRenderer(gun, Vector2(16, 16), 11, LoadSpriteSheet("Assets/Sprites/Player/gun.png")));
 
     gun->AddComponent(new Orbit(gun, player, 25, Vector2(1, 0), aimStick));
 
     GameObjectManager::GetInstance()->AddGameObject(gun);
+#pragma endregion
+
+#pragma region Camera Setup
+        GameObject *camera = new GameObject("Camera");
+        camera->layer = CollisionMatrix::CAMERA;
+        camera->transform.position = Vector2(640, 360);
+
+        camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
+        camera->AddComponent(new Rigidbody2D(camera, 1, 0.5, 0, 0.0));
+        camera->AddComponent(new Camera(camera, player, Vector2(1280, 720), Vector2(0, -70), 10, Vector2(50, 70)));
+        
+        Game::CAMERA = camera;
+
+        GameObjectManager::GetInstance()->AddGameObject(camera);
 #pragma endregion
 
     });
