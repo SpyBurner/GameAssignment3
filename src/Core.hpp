@@ -14,7 +14,7 @@
 
 class GameObject;
 
-const int COLL_MATRIX_SIZE = 64;
+const int COLL_MATRIX_SIZE = 128;
 class CollisionMatrix {
 private:
     static bool COLLISION_MATRIX[COLL_MATRIX_SIZE][COLL_MATRIX_SIZE];

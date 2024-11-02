@@ -129,9 +129,8 @@ Component *Joystick::Clone(GameObject *parent) {
     return newJoystick;
 }
 
-MovementController::MovementController(GameObject *parent, float speed, float jumpForce, Joystick *joystick) : Component(parent) {
+MovementController::MovementController(GameObject *parent, float speed, Joystick *joystick) : Component(parent) {
     this->speed = speed;
-    this->jumpForce = jumpForce;
 
     this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
     this->joystick = this->gameObject->GetComponent<Joystick>();
@@ -179,7 +178,7 @@ bool MovementController::GetEnabled() {
 void MovementController::Draw() {}
 
 Component *MovementController::Clone(GameObject *parent) {
-    MovementController *newMovementController = new MovementController(parent, speed, jumpForce, joystick);
+    MovementController *newMovementController = new MovementController(parent, speed, joystick);
     return newMovementController;
 }
 
@@ -220,6 +219,9 @@ void JumpController::Update() {
         if (rigidbody == nullptr)
             return;
     }
+
+    std::cout << lastNormal.x << " " << lastNormal.y << std::endl;
+    std::cout << grounded << std::endl;
 
     if (SDL_GetTicks() - lastJumpTime < cooldown)
         return;

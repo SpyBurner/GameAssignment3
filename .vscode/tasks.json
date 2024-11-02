@@ -7,8 +7,8 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g", // Add debug information
-                "-I", "src\\include",
-                "-L", "src\\lib",
+                "-I", "${workspaceFolder}\\src\\include",
+                "-L", "${workspaceFolder}\\src\\lib",
                 "-o", "${workspaceFolder}\\main.exe",
                 "${workspaceFolder}\\*.cpp",
                 "${workspaceFolder}\\src\\*.cpp",

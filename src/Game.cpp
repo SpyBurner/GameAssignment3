@@ -205,7 +205,7 @@ void Game::objectInit() {
             player->AddComponent(new Joystick(player, SDLK_w, SDLK_s, SDLK_a, SDLK_d))
         );
 
-        player->AddComponent(new MovementController(player, 18, .5, movementStick));
+        player->AddComponent(new MovementController(player, 18, movementStick));
 
         player->AddComponent(new PlayerAnimController(player));
         
@@ -243,13 +243,17 @@ void Game::objectInit() {
 #pragma endregion
 
 #pragma region Camera Setup
-        // GameObject *camera = new GameObject("Camera");
-        // camera->AddComponent(new Camera(camera, nullptr, Vector2(1280, 720), Vector2(0, 0), 0.5, Vector2(100, 100)));
-        // camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
-        
-        // Game::CAMERA = camera;
+        GameObject *camera = new GameObject("Camera");
+        camera->layer = CollisionMatrix::CAMERA;
+        camera->transform.position = Vector2(640, 360);
 
-        // GameObjectManager::GetInstance()->AddGameObject(camera);
+        camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
+        camera->AddComponent(new Rigidbody2D(camera, 1, 0.5, 0, 0.0));
+        camera->AddComponent(new Camera(camera, player, Vector2(1280, 720), Vector2(0, -50), 10, Vector2(50, 50)));
+        
+        Game::CAMERA = camera;
+
+        GameObjectManager::GetInstance()->AddGameObject(camera);
 #pragma endregion
 
     });

@@ -11,7 +11,7 @@
 class RotateTowardVelocity : public Component {
 private:
     Vector2 originalForward;
-    Rigidbody2D *rigidbody;
+    Rigidbody2D *rigidbody = nullptr;
     Vector2 lastVelocity;
 
     void Update();
@@ -25,9 +25,9 @@ public:
 /* Use difference in position, or rigidbody */
 class VelocityToAnimSpeedController : public Component {
 private:
-    Rigidbody2D *rigidbody;
-    Rigidbody2D* backupRigidbody;
-    Animator *animator;
+    Rigidbody2D *rigidbody = nullptr;
+    Rigidbody2D* backupRigidbody  = nullptr;
+    Animator *animator  = nullptr;
     std::string animName;
     float speedMultiplier;
     Vector2 lastPosition;
