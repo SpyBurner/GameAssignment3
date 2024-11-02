@@ -361,6 +361,16 @@ void SpriteRenderer::Draw() {
     destRect.h = spriteRect.h * transform->scale.y;
 
     if (Game::CAMERA) {
+        SDL_Rect drawCheckRect;
+        drawCheckRect.x = gameObject->transform.position.x - spriteRect.w * transform->scale.x / 2;
+        drawCheckRect.y = gameObject->transform.position.y - spriteRect.h * transform->scale.y / 2;
+        drawCheckRect.w = spriteRect.w * transform->scale.x;
+        drawCheckRect.h = spriteRect.h * transform->scale.y;
+
+        if (!Game::CAMERA->GetComponent<Collider2D>()->CheckCollision(drawCheckRect)) {
+            return;
+        }
+
         Vector2 newPos = Game::CAMERA->GetComponent<Camera>()->WorldToScreen(Vector2(destRect.x, destRect.y));
         destRect.x = newPos.x;
         destRect.y = newPos.y;

@@ -1,5 +1,5 @@
 #include "Physic2D.hpp"
-
+#include <math.h>
 CollisionManager *CollisionManager::instance = nullptr;
 
 #pragma region Rigidbody2D
@@ -209,6 +209,16 @@ bool CircleCollider2D::CheckCollision(BoxCollider2D *other) {
     return ::CheckCollision(this, other);
 }
 
+bool CircleCollider2D::CheckCollision(SDL_Rect rect){
+    Vector2 thisPosition = this->gameObject->transform.position + this->offset;
+    Vector2 closestPoint = Vector2(
+        std::max((float)rect.x, std::min(thisPosition.x, (float)rect.x + rect.w)),
+        std::max((float)rect.y, std::min(thisPosition.y, (float)rect.y + rect.h))
+    );
+    float distance = (thisPosition - closestPoint).Magnitude();
+    return distance < this->radius;
+}
+
 bool CircleCollider2D::CheckCollision(Vector2 point) {
     Vector2 thisPosition = this->gameObject->transform.position + this->offset;
     float distance = (thisPosition - point).Magnitude();
@@ -258,6 +268,19 @@ bool BoxCollider2D::CheckCollision(BoxCollider2D *other) {
     bool collisionY = box1Max.y >= box2Min.y && box1Min.y <= box2Max.y;
 
     return collisionX && collisionY;
+}
+
+bool BoxCollider2D::CheckCollision(SDL_Rect rect){
+    Vector2 boxMin = this->gameObject->transform.position - this->size / 2 + this->offset;
+    Vector2 boxMax = this->gameObject->transform.position + this->size / 2 + this->offset;
+
+    bool collisionX = boxMax.x >= rect.x && boxMin.x <= rect.x + rect.w;
+    bool collisionY = boxMax.y >= rect.y && boxMin.y <= rect.y + rect.h;
+
+    bool insideX = boxMin.x >= rect.x && boxMax.x <= rect.x + rect.w;
+    bool insideY = boxMin.y >= rect.y && boxMax.y <= rect.y + rect.h;
+
+    return (collisionX && collisionY) || (insideX && insideY);
 }
 
 bool BoxCollider2D::CheckCollision(Vector2 point) {

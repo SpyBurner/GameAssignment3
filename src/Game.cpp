@@ -249,7 +249,7 @@ void Game::objectInit() {
 
         camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
         camera->AddComponent(new Rigidbody2D(camera, 1, 0.5, 0, 0.0));
-        camera->AddComponent(new Camera(camera, player, Vector2(1280, 720), Vector2(0, -50), 10, Vector2(50, 50)));
+        camera->AddComponent(new Camera(camera, player, Vector2(1280, 720), Vector2(0, -70), 10, Vector2(50, 70)));
         
         Game::CAMERA = camera;
 

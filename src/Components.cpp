@@ -220,9 +220,6 @@ void JumpController::Update() {
             return;
     }
 
-    std::cout << lastNormal.x << " " << lastNormal.y << std::endl;
-    std::cout << grounded << std::endl;
-
     if (SDL_GetTicks() - lastJumpTime < cooldown)
         return;
     if (Game::event.type == SDL_KEYDOWN) {
@@ -486,8 +483,11 @@ void Camera::Update() {
         move = true;
 
     // Only move if the target is out of deadzone
+
+    Vector2 desiredPos = followPos + offset;
+
     if (move) {
-        rigidbody->AddForce((follow->transform.position - gameObject->transform.position) * speed * 1 / FPS);
+        rigidbody->AddForce((desiredPos - gameObject->transform.position) * speed * 1 / FPS);
     }
 }
 
