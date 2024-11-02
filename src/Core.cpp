@@ -5,11 +5,11 @@
 #include <iostream>
 #include <algorithm>
 #include <list>
-#include <json/json.h>
 #include <fstream>
 
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
+#include <string>
 
 
 // INIT STATIC
@@ -316,7 +316,7 @@ void SpriteRenderer::Draw() {
     destRect.h = spriteRect.h * transform->scale.y;
 
     // Copy the sprite to the renderer
-    // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
+    // SDL_RenderCopy(RENDERER, spriteSheet, &spriteRect, &destRect);
     SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, SDL_FLIP_NONE);
 }
 
@@ -732,9 +732,11 @@ void SoundManager::ResumeSound() {
 
 #pragma region TileMap
 
-TileMap::TileMap() : tileMapSheet(nullptr), mapSize(0, 0), tileSize(0, 0), cameraPos(0, 0) {}
+TileMap::TileMap() {}
 
 TileMap::~TileMap() {}
+
+TileMap* TileMap::instance = nullptr;
 
 TileMap* TileMap::GetInstance() {
     if (instance == nullptr) {
@@ -743,94 +745,116 @@ TileMap* TileMap::GetInstance() {
     return instance;
 }
 
-void TileMap::InitSheet(std::string sheetPath, std::string jsonPath, Vector2 mapSize, Vector2 tileSize) {
+void TileMap::InitTileSet(std::string sheetPath, std::string jsonPath) {
+    std::cout << "TileMap::InitTileSet" << std::endl;
+    // Load the sprite sheet
     tileMapSheet = LoadSpriteSheet(sheetPath);
-    this->mapSize = mapSize;
-    this->tileSize = tileSize;
 
-    // Load and parse the JSON file using JsonCpp
-    std::ifstream jsonFile(jsonPath, std::ifstream::binary);
-    Json::Value root;
-    jsonFile >> root;
+    // Initialize tileSet from tilemap_sheet_structure data
+    for (const auto& tileData : TILEMAP_SHEET_STRUCTURE) {
+        std::string type = tileData.type;
+        int posX = tileData.position.posX;
+        int posY = tileData.position.posY;
+        int size = tileData.size;
+        std::string tileId;
 
-    // Initialize tileTypes from JSON data
-    for (const auto& tileData : root["tiles"]) {
-        std::string type = tileData["type"].asString();
-        int posX = tileData["posX"].asInt();
-        int posY = tileData["posY"].asInt();
-        int layer = tileData["layer"].asInt();
-        bool hasCollider = tileData.isMember("collider") ? tileData["collider"].asBool() : false;
+        if (type.find("land") != std::string::npos) {
+            if (type == "land") {
+                std::string direction = tileData.direction;
+                int index = tileData.index;
 
-        BoxCollider2D* collider = hasCollider ? new BoxCollider2D(this, Vector2(posX, posY), tileSize) : nullptr;
-        tileTypes[type].push_back(Tile({posX, posY}, collider, layer));
+                tileId = type + "_" + direction + "_" + std::to_string(index);
+                GameObject* newGameObject = new GameObject(tileId);
+
+                newGameObject->tag = 0;
+
+                newGameObject->AddComponent(new SpriteRenderer(newGameObject, Vector2(size * TILE_SIZE, size * TILE_SIZE), 0, tileMapSheet));
+                newGameObject->GetComponent<SpriteRenderer>()->spriteRect = {posX * TILE_SIZE, posY * TILE_SIZE, size * TILE_SIZE, size * TILE_SIZE};
+                newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE)));
+                newGameObject->GetComponent<SpriteRenderer>()->enabled = false;
+                newGameObject->GetComponent<BoxCollider2D>()->enabled = false;
+
+                tileSet[tileId] = newGameObject;
+            }
+            else {
+                std::string direction = tileData.direction;
+
+                tileId = type + "_" + direction;
+                GameObject* newGameObject = new GameObject(tileId);
+
+                newGameObject->tag = 0;
+
+                newGameObject->AddComponent(new SpriteRenderer(newGameObject, Vector2(size * TILE_SIZE, size * TILE_SIZE), 0, tileMapSheet));
+                newGameObject->GetComponent<SpriteRenderer>()->spriteRect = {posX * TILE_SIZE, posY * TILE_SIZE, size * TILE_SIZE, size * TILE_SIZE};
+                newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE)));
+                newGameObject->GetComponent<SpriteRenderer>()->enabled = false;
+                newGameObject->GetComponent<BoxCollider2D>()->enabled = false;
+
+                tileSet[tileId] = newGameObject;
+            }
+        }
+        else {
+            tileId = type;
+            GameObject* newGameObject = new GameObject(tileId);
+
+            newGameObject->tag = 0;
+
+            newGameObject->AddComponent(new SpriteRenderer(newGameObject, Vector2(size * TILE_SIZE, size * TILE_SIZE), 0, tileMapSheet));
+            newGameObject->GetComponent<SpriteRenderer>()->spriteRect = {posX * TILE_SIZE, posY * TILE_SIZE, size * TILE_SIZE, size * TILE_SIZE};
+            newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE)));
+            newGameObject->GetComponent<SpriteRenderer>()->enabled = false;
+            newGameObject->GetComponent<BoxCollider2D>()->enabled = false;
+
+            tileSet[tileId] = newGameObject;
+        }
+
+        std::cout << tileSet[tileId]->GetName() << std::endl;
+        SDL_Rect spriteRect = tileSet[tileId]->GetComponent<SpriteRenderer>()->spriteRect;
+        std::cout << "spriteRect: " << spriteRect.x << ", " << spriteRect.y << std::endl;
     }
+
+    std::cout << "TileMap::InitTileSet done" << std::endl;
 }
 
 void TileMap::LoadTileMap(std::string mapPath) {
-    // Load and parse the JSON file using JsonCpp
-    std::ifstream jsonFile(mapPath, std::ifstream::binary);
-    Json::Value root;
-    jsonFile >> root;
-
+    std::cout << "TileMap loaded" << std::endl;
+    int x = 0, y = 0;
+    int scale = 3;
     // Initialize tileMap from JSON data
-    const Json::Value& jsonTileMap = root["tileMap"];
-    tileMap.resize(jsonTileMap.size());
+    for (const auto& row : TILEMAP_0) {
+        std::vector<std::string> rowVector;
+        for (const auto& id : row) {
+            if (id == "") {
+                x++;
+                continue;
+            }
+            std::cout << id << std::endl;
+            rowVector.push_back(id);
 
-    for (Json::Value::ArrayIndex i = 0; i < jsonTileMap.size(); ++i) {
-        const Json::Value& row = jsonTileMap[i];
-        tileMap[i].resize(row.size());
-        for (Json::Value::ArrayIndex j = 0; j < row.size(); ++j) {
-            tileMap[i][j].first = row[j]["type"].asString();
-            tileMap[i][j].second = row[j]["index"].asInt();
+            GameObject* newTile = tileSet[id]->Instantiate(
+                id,
+                tileSet[id],
+                Vector2(x * TILE_SIZE * scale, y * TILE_SIZE * scale),
+                0.0f,
+                Vector2(scale, scale)
+            );
+            newTile->GetComponent<SpriteRenderer>()->enabled = true;
+            newTile->GetComponent<SpriteRenderer>()->spriteRect = tileSet[id]->GetComponent<SpriteRenderer>()->spriteRect;
+            SDL_Rect spriteRect = newTile->GetComponent<SpriteRenderer>()->spriteRect;
+            std::cout << "spriteRect: " << spriteRect.x << ", " << spriteRect.y << std::endl;
+            Transform tranform = newTile->transform;
+            std::cout << "tranform: " << tranform.position.x << ", " << tranform.position.y << std::endl;
+            newTile->GetComponent<BoxCollider2D>()->enabled = true;
+            tiles.push_back(newTile);
+            GameObjectManager::GetInstance()->AddGameObject(newTile);
+            x++;
         }
+        x = 0;
+        y++;
+        tileMapById.push_back(rowVector);
     }
-}
 
-void TileMap::SetTile(int x, int y, const std::string tileType, int tileIndex) {
-    if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) return;
-
-    if (tileTypes.find(tileType) != tileTypes.end()) {
-        tileMap[y][x] = { tileType, tileIndex };
-    }
-}
-
-Tile TileMap::GetTile(int x, int y) {
-    if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) return {};
-
-    return tileTypes[tileMap[y][x].first].at(tileMap[y][x].second);
-}
-
-void TileMap::Update() {}
-
-void TileMap::Draw() {
-    if (!tileMapSheet) return;
-
-    int startX = static_cast<int>(cameraPos.x / tileSize.x);
-    int startY = static_cast<int>(cameraPos.y / tileSize.y);
-    int endX = static_cast<int>((cameraPos.x + WIDTH) / tileSize.x);
-    int endY = static_cast<int>((cameraPos.y + HEIGHT) / tileSize.y);
-
-    for (int y = startY; y <= endY && y < mapSize.y; ++y) {
-        for (int x = startX; x <= endX && x < mapSize.x; ++x) {
-            const auto& tileInfo = tileMap[y][x];
-            if (tileTypes.find(tileInfo.first) == tileTypes.end()) continue;
-
-            Tile& tile = tileTypes[tileInfo.first].at(tileInfo.second);
-            SDL_Rect srcRect = {
-                tile.tilePosInSheet.first * static_cast<int>(tileSize.x),
-                tile.tilePosInSheet.second * static_cast<int>(tileSize.y),
-                static_cast<int>(tileSize.x),
-                static_cast<int>(tileSize.y)
-            };
-            SDL_Rect dstRect = {
-                static_cast<int>((x * tileSize.x) - cameraPos.x),
-                static_cast<int>((y * tileSize.y) - cameraPos.y),
-                static_cast<int>(tileSize.x),
-                static_cast<int>(tileSize.y)
-            };
-            SDL_RenderCopy(RENDERER, tileMapSheet, &srcRect, &dstRect);
-        }
-    }
+    std::cout << "TileMap loaded done" << std::endl;
 }
 
 #pragma endregion

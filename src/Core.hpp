@@ -325,44 +325,29 @@ public:
 
 };
 
-class TileMap : public GameObject{
+class TileMap{
 private:
     SDL_Texture* tileMapSheet;
-    // an map to define tileType, each type has different tiles, store in a vector
-    std::map<std::string, std::vector<Tile>> tileTypes;
-    // 2D array of tile, get from tileTypes map, string field for type, int field for position in vector
-    std::vector<std::vector<std::pair<std::string, int>>> tileMap;
-    // the size of each tile as pixel
-    Vector2 tileSize;
-    // the size of map as number of tiles
-    Vector2 mapSize;
-    // camera position
-    Vector2 cameraPos;
+    // an map to mark tile with id, each tile is a GameObject that has a SpriteRenderer, a BoxCollider2D, ...
+    // std::map<std::string, GameObject *> tileSet;
+    std::map<std::string, GameObject *> tileSet;
+    // 2D array of tile, each tile in tileMap is represented by it id, a json file will be used to initialize the whole map
+    std::vector<std::vector<std::string>> tileMapById;
+    std::vector<GameObject*> tiles;
 
     static TileMap *instance;
-
-public:
     TileMap();
     ~TileMap();
 
-    TileMap* GetInstance();
+public:
+    static TileMap* GetInstance();
 
-    void InitSheet(std::string sheetPath, std::string jsonPath, Vector2 mapSize, Vector2 tileSize);
+    void InitTileSet(std::string sheetPath, std::string jsonPath);
     void LoadTileMap(std::string mapPath);
-    void SetTile(int x, int y, std::string tileType, int tileIndex);
-    Tile GetTile(int x, int y);
+    void SetTile();
+    GameObject* GetTile();
     void Update();
     void Draw();
-};
-
-struct Tile {
-    std::pair<int, int> tilePosInSheet;
-    // offset and size are in tileCollider
-    BoxCollider2D* tileCollider;
-    int layer;
-
-    Tile() : tilePosInSheet(-1, -1), tileCollider(nullptr), layer(-1) {}
-    Tile(std::pair<int, int> tilePos, BoxCollider2D* tileCollider, int layer) : tilePosInSheet(tilePos), tileCollider(tileCollider), layer(layer) {}
 };
 
 #endif
