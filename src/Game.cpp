@@ -243,13 +243,13 @@ void Game::objectInit() {
 #pragma endregion
 
 #pragma region Camera Setup
-        GameObject *camera = new GameObject("Camera");
-        camera->AddComponent(new Camera(camera, nullptr, Vector2(1280, 720), Vector2(0, 0), 0.5, Vector2(100, 100)));
-        camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
+        // GameObject *camera = new GameObject("Camera");
+        // camera->AddComponent(new Camera(camera, nullptr, Vector2(1280, 720), Vector2(0, 0), 0.5, Vector2(100, 100)));
+        // camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
         
-        Game::CAMERA = camera;
+        // Game::CAMERA = camera;
 
-        GameObjectManager::GetInstance()->AddGameObject(camera);
+        // GameObjectManager::GetInstance()->AddGameObject(camera);
 #pragma endregion
 
     });

@@ -12,7 +12,7 @@ void AutoDestroy::Update() {
     }
 }
 
-void Draw() {}
+void AutoDestroy::Draw() {}
 
 Component *AutoDestroy::Clone(GameObject *parent) {
     AutoDestroy *newAutoDestroy = new AutoDestroy(parent, timeToDestroy);
