@@ -40,7 +40,7 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
 
         renderer = SDL_CreateRenderer(window, -1, 0);
         if (renderer) {
-            SDL_SetRenderDrawColor(renderer, 128, 239, 129, 255);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             std::cout << "Renderer created..." << std::endl;
         }
 
@@ -153,17 +153,17 @@ void Game::objectInit() {
 
         GameObjectManager::GetInstance()->AddGameObject(lowWall1);
 
-        // GameObject *lowWall2 = new GameObject("LowWall2");
-        // lowWall2->layer = CollisionMatrix::WALL;
-        // lowWall2->transform.rotation = 0;
-        // lowWall2->transform.position = Vector2(700, 600); // Adjust position as needed
-        // lowWall2->transform.scale = Vector2(15, 5);       // Adjust scale as needed
-        // lowWall2->AddComponent(new SpriteRenderer(lowWall2, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // lowWall2->AddComponent(new BoxCollider2D(lowWall2, Vector2(0, 0),
-        //                                          Vector2(15 * lowWall2->transform.scale.x, 30 * lowWall2->transform.scale.y),
-        //                                          false));
+        GameObject *lowWall2 = new GameObject("LowWall2");
+        lowWall2->layer = CollisionMatrix::WALL;
+        lowWall2->transform.rotation = 0;
+        lowWall2->transform.position = Vector2(1000, 600); // Adjust position as needed
+        lowWall2->transform.scale = Vector2(100, 5);       // Adjust scale as needed
+        lowWall2->AddComponent(new SpriteRenderer(lowWall2, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        lowWall2->AddComponent(new BoxCollider2D(lowWall2, Vector2(0, 0),
+                                                 Vector2(15 * lowWall2->transform.scale.x, 30 * lowWall2->transform.scale.y),
+                                                 false));
 
-        // GameObjectManager::GetInstance()->AddGameObject(lowWall2);
+        GameObjectManager::GetInstance()->AddGameObject(lowWall2);
 #pragma endregion
 
 #pragma region Shell Setup
@@ -173,7 +173,7 @@ void Game::objectInit() {
 
         dropShellParticle->AddComponent(new SpriteRenderer(dropShellParticle, Vector2(5, 5), 1, nullptr));
         dropShellParticle->AddComponent(new Rigidbody2D(dropShellParticle, 1, 0.025, 0, 1.0));
-        dropShellParticle->AddComponent(new CircleCollider2D(dropShellParticle, Vector2(0, 0), 3, true));
+        dropShellParticle->AddComponent(new CircleCollider2D(dropShellParticle, Vector2(0, 0), 3, false));
         dropShellParticle->AddComponent(new Animator(dropShellParticle, {
                                                                             AnimationClip("Default", "Assets/Sprites/Player/shell_particle.png", Vector2(5, 5), 100, true, 1.0, 0, 3),
                                                                         }));
@@ -218,7 +218,7 @@ void Game::objectInit() {
                         // 4 ranges of dmg, 3dmg in the first 1 / PLAYER_DMG_DROP units
                         int dmg = (int)(PLAYER_DAMAGE - std::min((distance - 1 / PLAYER_DMG_DROP) * PLAYER_DMG_DROP, (double)PLAYER_DAMAGE - 1));
 
-                        std::cout << "Shell hit enemy for " << dmg << " damage" << std::endl;
+                        std::cout << "Shell hit " << collider->gameObject->GetName() <<" for " << dmg << " damage" << std::endl;
 
                         hpController->TakeDamage(dmg);
                     }
@@ -276,7 +276,7 @@ void Game::objectInit() {
         player->AddComponent(new JumpController(player, SDLK_SPACE, 14, 450, CollisionMatrix::WALL));
         player->GetComponent<JumpController>()->BindCollider(player->GetComponent<BoxCollider2D>());
 
-        player->AddComponent(new HPController(player, PLAYER_HP, 1000));
+        player->AddComponent(new HPController(player, PLAYER_HP, PLAYER_INVINCIBILITY_TIME));
 
         GameObjectManager::GetInstance()->AddGameObject(player);
 
@@ -287,7 +287,7 @@ void Game::objectInit() {
 
         playerHurtParticle->AddComponent(new SpriteRenderer(playerHurtParticle, Vector2(5, 5), 20, LoadSpriteSheet("Assets/Sprites/Player/player_dmg_particle.png")));
         playerHurtParticle->AddComponent(new Rigidbody2D(playerHurtParticle, 1, 0.025, 0, 1.0));
-        playerHurtParticle->AddComponent(new CircleCollider2D(playerHurtParticle, Vector2(0, 0), 3, true));
+        playerHurtParticle->AddComponent(new CircleCollider2D(playerHurtParticle, Vector2(0, 0), 3, false));
 
         ParticleSystem *playerHurtParticleSystem = dynamic_cast<ParticleSystem *>(
             player->AddComponent(new ParticleSystem(player, playerHurtParticle, 50, 2000, Vector2(0, -1), 10, 360)));
@@ -334,7 +334,7 @@ void Game::objectInit() {
     auto CreateMeleeProjectile = [](Vector2 direction, float lifeTime, Vector2 position) {
         GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(rand() + rand()));
         meleeProjectile->layer = CollisionMatrix::E_PROJECTILE;
-        meleeProjectile->transform.scale = Vector2(2, 2);
+        meleeProjectile->transform.scale = Vector2(3, 3);
         meleeProjectile->transform.position = position;
 
         meleeProjectile->AddComponent(new SpriteRenderer(meleeProjectile, Vector2(32, 16), 20, nullptr));
@@ -376,7 +376,7 @@ void Game::objectInit() {
 
         enemyHurtParticle->AddComponent(new SpriteRenderer(enemyHurtParticle, Vector2(5, 5), 20, LoadSpriteSheet("Assets/Sprites/Enemy/enemy_dmg_particle.png")));
         enemyHurtParticle->AddComponent(new Rigidbody2D(enemyHurtParticle, 1, 0.025, 0, 1.0));
-        enemyHurtParticle->AddComponent(new CircleCollider2D(enemyHurtParticle, Vector2(0, 0), 3, true));
+        enemyHurtParticle->AddComponent(new CircleCollider2D(enemyHurtParticle, Vector2(0, 0), 3, false));
 
         // MELEE
         GameObject *melee = new GameObject("Melee");
@@ -389,7 +389,7 @@ void Game::objectInit() {
                                          {
                                              AnimationClip("Idle", "Assets/Sprites/Enemy/melee_enemy_idle-sheet.png", Vector2(24, 28), 1000, true, 1.0, 0, 3),
                                              AnimationClip("Walk", "Assets/Sprites/Enemy/melee_enemy_walking-sheet.png", Vector2(24, 28), 500, true, 1.0, 0, 2),
-                                             AnimationClip("Attack", "Assets/Sprites/Enemy/melee_enemy_attack-sheet.png", Vector2(29, 33), 600, false, 1.0, 0, 4),
+                                             AnimationClip("Attack", "Assets/Sprites/Enemy/melee_enemy_attack-sheet.png", Vector2(29, 33), 400, false, 1.0, 0, 4),
                                          }));
         melee->GetComponent<Animator>()->Play("Walk");
 

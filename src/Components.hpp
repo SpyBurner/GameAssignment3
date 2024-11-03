@@ -139,6 +139,7 @@ private:
     ParticleSystem *particleSystem = nullptr;
     Joystick *joystick = nullptr;
 
+    float lastHandOff = 0;
 public:
     PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick);
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell);

@@ -87,26 +87,23 @@ void MeleeAI::Update() {
         state = WALK;
     } else if (state == WALK) {
         animator->Play("Walk");
-        if (target && Vector2::Distance(target->transform.position, gameObject->transform.position) <= attackRange
+
+        Vector2 distance = target->transform.position - gameObject->transform.position;
+
+        //In range & in front & off cooldown
+        if (target && distance.Magnitude() <= attackRange
+            && Vector2::Dot(walkDirection, distance) > 0
             && SDL_GetTicks() - lastAttackTime >= attackCooldown) {
             state = ATTACK;
-            rb->velocity = Vector2(0, 0);
         }
         else
             Move();
     } else if (state == ATTACK) {
-        if (SDL_GetTicks() - lastAttackTime < attackCooldown){
-            state = WALK;
-        }
+        Attack();
+        animator->Play("Attack");
         
-        if (!animator->GetClip("Attack")->isPlaying){
-            Attack();
-            animator->Play("Attack");
-        }
-        else{
-            if (animator->GetClip("Attack")->IsFinished())
-                state = WALK;
-        }
+        if (animator->GetClip("Attack")->IsFinished())
+            state = WALK;
     }
 
     ResetDetection();

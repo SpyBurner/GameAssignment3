@@ -640,8 +640,8 @@ SceneManager::~SceneManager() {
         delete pair.second;
     }
     scenes.clear();
-    delete CollisionManager::GetInstance();
     delete GameObjectManager::GetInstance();
+    delete CollisionManager::GetInstance();
 }
 
 SceneManager *SceneManager::GetInstance() {

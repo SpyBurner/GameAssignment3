@@ -359,8 +359,12 @@ void PlayerShoot::Update() {
         shoot = true;
         lastDirection = joystick->GetDirection().Normalize();
     }
+    else{
+        lastHandOff = SDL_GetTicks();
+    }
 
-    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown) {
+    //60 ms to aim before shooting
+    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 60) {
 
         for (int i = 0; i < shootAmount; i++) {
 

@@ -145,6 +145,7 @@ void CollisionManager::AddCollider(Collider2D *collider) {
 }
 
 void CollisionManager::RemoveCollider(Collider2D *collider) {
+    
     for (int i = 0; i < this->colliders.size(); i++) {
         if (this->colliders[i] == collider) {
             this->colliders.erase(this->colliders.begin() + i);
