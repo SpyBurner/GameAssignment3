@@ -232,7 +232,7 @@ void RangedAI::Attack() {
         return;
     lastAttackTime = SDL_GetTicks();
 
-    Vector2 compensation = target->GetComponent<Rigidbody2D>()->velocity * 2;
+    Vector2 compensation = target->GetComponent<Rigidbody2D>()->velocity * 4;
     Vector2 direction = (target->transform.position - gameObject->transform.position + compensation).Normalize();
 
     GameObject *attack = createAttack(direction, RANGED_PROJECTILE_SPEED, RANGED_PROJECTILE_LIFETIME, gameObject->transform.position);
