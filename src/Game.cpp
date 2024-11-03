@@ -1,10 +1,12 @@
 #include "Game.hpp"
+#include "AI.hpp"
 #include "Components.hpp"
 #include "Core.hpp"
 #include "Global.hpp"
 #include "Helper.hpp"
 #include "Physic2D.hpp"
 #include "SDLCustomEvent.hpp"
+
 
 #include <SDL2/SDL_mixer.h>
 #include <iostream>
@@ -92,11 +94,13 @@ void Game::objectInit() {
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PARTICLE, CollisionMatrix::WALL, true);
 
     // Damage
-    CollisionMatrix::setCollisionMatrix(CollisionMatrix::ENEMY, CollisionMatrix::PLAYER, true);
+    // CollisionMatrix::setCollisionMatrix(CollisionMatrix::ENEMY, CollisionMatrix::PLAYER, true);
+    // CollisionMatrix::setCollisionMatrix(CollisionMatrix::PLAYER, CollisionMatrix::E_HURT_BOX, true);
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::E_PROJECTILE, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::ENEMY, true);
 
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::DETECTION, CollisionMatrix::WALL, true);
 #pragma endregion
 
     Scene *gameScene = new Scene("Game");
@@ -204,8 +208,7 @@ void Game::objectInit() {
             shell->AddComponent(new CircleCollider2D(shell, Vector2(0, 0),
                                                      5 * shell->transform.scale.x / 2, true));
             shell->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([shell](Collider2D *collider) {
-                if (collider->gameObject->layer == CollisionMatrix::ENEMY) {
-                    std::cout << "Shell hit enemy" << std::endl;
+                if (collider->layer == CollisionMatrix::ENEMY) {
                     HPController *hpController = collider->gameObject->GetComponent<HPController>();
                     if (hpController) {
                         ShellBehavior *shellBehavior = shell->GetComponent<ShellBehavior>();
@@ -220,8 +223,6 @@ void Game::objectInit() {
                         hpController->TakeDamage(dmg);
                     }
                 }
-                if (collider->gameObject->layer == CollisionMatrix::E_PROJECTILE)
-                    return;
 
                 GameObjectManager::GetInstance()->RemoveGameObject(shell->GetName());
             });
@@ -241,10 +242,10 @@ void Game::objectInit() {
         player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, nullptr));
 
         player->AddComponent(new Animator(player,
-            {
-            AnimationClip("Idle", "Assets/Sprites/Player/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
-            AnimationClip("Walk", "Assets/Sprites/Player/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
-            }));
+                                          {
+                                              AnimationClip("Idle", "Assets/Sprites/Player/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
+                                              AnimationClip("Walk", "Assets/Sprites/Player/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
+                                          }));
 
         player->GetComponent<Animator>()->Play("Idle");
 
@@ -256,12 +257,12 @@ void Game::objectInit() {
         Joystick *movementStick = dynamic_cast<Joystick *>(
             player->AddComponent(new Joystick(player, SDLK_w, SDLK_s, SDLK_a, SDLK_d)));
 
-        player->AddComponent(new MovementController(player, 18, movementStick));
+        player->AddComponent(new MovementController(player, PLAYER_SPEED, movementStick));
 
         player->AddComponent(new PlayerAnimController(player));
 
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0),
-                                               Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y), true));
+                                               Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y), false));
 
         player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10));
         player->GetComponent<ParticleSystem>()->Stop();
@@ -269,10 +270,10 @@ void Game::objectInit() {
         Joystick *aimStick = dynamic_cast<Joystick *>(
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT)));
 
-        player->AddComponent(new PlayerShoot(player, 40, 1000, 1000, 5, 5, aimStick));
+        player->AddComponent(new PlayerShoot(player, 40, 600, 1000, 5, 10, aimStick));
         player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
 
-        player->AddComponent(new JumpController(player, SDLK_SPACE, 20, 450, CollisionMatrix::WALL));
+        player->AddComponent(new JumpController(player, SDLK_SPACE, 14, 450, CollisionMatrix::WALL));
         player->GetComponent<JumpController>()->BindCollider(player->GetComponent<BoxCollider2D>());
 
         player->AddComponent(new HPController(player, PLAYER_HP, 1000));
@@ -328,7 +329,47 @@ void Game::objectInit() {
         GameObjectManager::GetInstance()->AddGameObject(camera);
 #pragma endregion
 
-#pragma region Enemy setup
+#pragma region Melee projectile setup
+
+    auto CreateMeleeProjectile = [](Vector2 direction, float lifeTime, Vector2 position) {
+        GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(rand() + rand()));
+        meleeProjectile->layer = CollisionMatrix::E_PROJECTILE;
+        meleeProjectile->transform.scale = Vector2(2, 2);
+        meleeProjectile->transform.position = position;
+
+        meleeProjectile->AddComponent(new SpriteRenderer(meleeProjectile, Vector2(32, 16), 20, nullptr));
+
+        meleeProjectile->AddComponent(new Animator(meleeProjectile,
+            {
+                AnimationClip("Default", "Assets/Sprites/Enemy/melee_slash.png", Vector2(32, 16), lifeTime, false, 1.0, 0, 2),
+            }));
+
+        meleeProjectile->AddComponent(new AutoDestroy(meleeProjectile, lifeTime));
+
+        meleeProjectile->AddComponent(new Rigidbody2D(meleeProjectile, 1, 0.025, 0, 0.0));
+
+        meleeProjectile->AddComponent(new FLipToVelocity(meleeProjectile, Vector2(-1, 0)));
+
+        meleeProjectile->GetComponent<Rigidbody2D>()->AddForce(direction * MELEE_SPEED / 10);
+
+        meleeProjectile->AddComponent(new BoxCollider2D(meleeProjectile, Vector2(0, 0), 
+            Vector2(32 * meleeProjectile->transform.scale.x, 16 * meleeProjectile->transform.scale.y), 
+        true));
+
+        meleeProjectile->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([meleeProjectile](Collider2D *collider) {
+            if (collider->layer == CollisionMatrix::PLAYER) {
+                HPController *hpController = collider->gameObject->GetComponent<HPController>();
+                if (hpController)
+                    hpController->TakeDamage(MELEE_DAMAGE * 2);
+            }
+        });
+
+        return meleeProjectile;
+    };
+
+#pragma endregion
+
+#pragma region Melee setup
         GameObject *enemyHurtParticle = new GameObject("EnemyHurtParticle");
         enemyHurtParticle->layer = CollisionMatrix::PARTICLE;
         enemyHurtParticle->transform.scale = Vector2(2, 2);
@@ -337,7 +378,7 @@ void Game::objectInit() {
         enemyHurtParticle->AddComponent(new Rigidbody2D(enemyHurtParticle, 1, 0.025, 0, 1.0));
         enemyHurtParticle->AddComponent(new CircleCollider2D(enemyHurtParticle, Vector2(0, 0), 3, true));
 
-        //MELEE
+        // MELEE
         GameObject *melee = new GameObject("Melee");
         melee->layer = CollisionMatrix::ENEMY;
         melee->transform.position = Vector2(450, 100);
@@ -345,29 +386,38 @@ void Game::objectInit() {
 
         melee->AddComponent(new SpriteRenderer(melee, Vector2(0, 0), 5, nullptr));
         melee->AddComponent(new Animator(melee,
-            {
-                AnimationClip("Idle", "Assets/Sprites/Enemy/melee_enemy_idle-sheet.png", Vector2(24, 28), 1000, true, 1.0, 0, 3),
-                AnimationClip("Walk", "Assets/Sprites/Enemy/melee_enemy_walking-sheet.png", Vector2(24, 28), 500, true, 1.0, 0, 2),
-                AnimationClip("Attack", "Assets/Sprites/Enemy/melee_enemy_attack-sheet.png", Vector2(29, 33), 600, true, 1.0, 0, 4),
-            }));
+                                         {
+                                             AnimationClip("Idle", "Assets/Sprites/Enemy/melee_enemy_idle-sheet.png", Vector2(24, 28), 1000, true, 1.0, 0, 3),
+                                             AnimationClip("Walk", "Assets/Sprites/Enemy/melee_enemy_walking-sheet.png", Vector2(24, 28), 500, true, 1.0, 0, 2),
+                                             AnimationClip("Attack", "Assets/Sprites/Enemy/melee_enemy_attack-sheet.png", Vector2(29, 33), 600, false, 1.0, 0, 4),
+                                         }));
         melee->GetComponent<Animator>()->Play("Walk");
 
         melee->AddComponent(new Rigidbody2D(melee, 1, 0.025, 0, 1.0));
         melee->AddComponent(new VelocityToAnimSpeedController(melee, "Walk"));
-        melee->AddComponent(new FLipToVelocity(melee, Vector2(1, 0)));
+        melee->AddComponent(new FLipToVelocity(melee, Vector2(-1, 0)));
 
+        // melee->GetComponent<Rigidbody2D>()->AddForce(Vector2(10, 0));
+
+        // Physic collider
         melee->AddComponent(new BoxCollider2D(melee, Vector2(0, 0),
-                                              Vector2(15 * melee->transform.scale.x, 27 * melee->transform.scale.y), true));
+                                              Vector2(15 * melee->transform.scale.x, 27 * melee->transform.scale.y), false));
 
-        melee->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([melee](Collider2D *collider) {
-            if (collider->gameObject->layer == CollisionMatrix::PLAYER) {
+        // Hitbox collider
+        BoxCollider2D *melee_hitbox = dynamic_cast<BoxCollider2D *>(
+            melee->AddComponent(new BoxCollider2D(melee, Vector2(0, 0),
+                                                  Vector2(15 * melee->transform.scale.x, 27 * melee->transform.scale.y), true)));
+
+        melee_hitbox->OnCollisionEnter.addHandler([melee](Collider2D *collider) {
+            if (collider->layer == CollisionMatrix::PLAYER) {
                 HPController *hpController = collider->gameObject->GetComponent<HPController>();
                 if (hpController)
                     hpController->TakeDamage(MELEE_DAMAGE);
             }
         });
+        melee_hitbox->layer = CollisionMatrix::E_PROJECTILE;
 
-        melee->AddComponent(new HPController(melee, MELEE_HP, 1000));
+        melee->AddComponent(new HPController(melee, MELEE_HP, 0));
 
         GameObjectManager::GetInstance()->AddGameObject(melee);
 
@@ -375,8 +425,13 @@ void Game::objectInit() {
             melee->AddComponent(new ParticleSystem(melee, enemyHurtParticle, 50, 2000, Vector2(0, -1), 10, 360)));
         enemyHurtParticleSystem->Stop();
         melee->GetComponent<HPController>()->OnDamage.addHandler([enemyHurtParticleSystem]() {
-            enemyHurtParticleSystem->Emit(5);
+            enemyHurtParticleSystem->Emit(2);
         });
+
+        melee->AddComponent(new MeleeAI(melee, MELEE_SPEED, MELEE_ATTACK_RANGE, MELEE_ATTACK_COOLDOWN));
+        melee->GetComponent<MeleeAI>()->SetTarget(player);
+
+        melee->GetComponent<MeleeAI>()->SetCreateAttack(CreateMeleeProjectile);
 
 #pragma endregion
     });

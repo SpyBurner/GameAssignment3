@@ -79,12 +79,12 @@ private:
     float cooldown = 0;
     float lastJumpTime = 0;
     bool grounded = false;
-    CollisionMatrix::Layers groundLayer = CollisionMatrix::DEFAULT;
+    CollisionMatrix::Layer groundLayer = CollisionMatrix::DEFAULT;
     Vector2 lastNormal = Vector2(0, 0);
     void OnCollisionEnter(Collider2D *collider);
 
 public:
-    JumpController(GameObject *parent, SDL_KeyCode jumpKey, float jumpForce, float cooldown, CollisionMatrix::Layers whatIsGround);
+    JumpController(GameObject *parent, SDL_KeyCode jumpKey, float jumpForce, float cooldown, CollisionMatrix::Layer whatIsGround);
     void Update();
     void Draw();
     void BindCollider(Collider2D *collider);
@@ -210,6 +210,7 @@ private:
 public:
     Event<> OnDeath = Event<>();
     Event<> OnDamage = Event<>();
+    Event<> OnHPChange = Event<>();
     HPController(GameObject *parent, int maxHP, float invincibleTime);
 
     void Update();
@@ -220,7 +221,9 @@ public:
     void SetInvincible(bool invincible);
     void SetParticleSystem(ParticleSystem *particleSystem);
 
-    int &GetHPRef();
+    int GetCurrentHP();
+    int GetMaxHP();
+
     bool IsDead();
 
     Component *Clone(GameObject *parent);

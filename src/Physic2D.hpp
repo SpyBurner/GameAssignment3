@@ -33,8 +33,10 @@ class Collider2D : public Component {
 private:
     void defaultCollision(Collider2D *other);
 public:
-    bool isTrigger;
+    int layer;
+
     Vector2 offset;
+    bool isTrigger;
     Event<Collider2D *> OnCollisionEnter;
 
 

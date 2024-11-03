@@ -514,6 +514,10 @@ void AnimationClip::Ready() {
     lastFrameTime = SDL_GetTicks() - animCooldown * speedScale;
 }
 
+bool AnimationClip::IsFinished() {
+    return currentSprite == endSprite && !loop && !isPlaying;
+}
+
 std::pair<SDL_Texture *, SDL_Rect> AnimationClip::GetCurrentSpriteInfo() {
     return {spriteSheet, currentSpriteRect};
 }
@@ -557,6 +561,9 @@ void Animator::Draw() {}
 void Animator::Play(std::string name) {
     AnimationClip *clip = GetClip(name);
     if (clip) {
+        if (currentClip->GetName() == name) {
+            return;
+        }
         currentClip = clip;
         currentClip->Ready();
     }

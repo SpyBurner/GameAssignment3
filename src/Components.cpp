@@ -201,7 +201,7 @@ void JumpController::OnCollisionEnter(Collider2D *collider) {
 }
 
 JumpController::JumpController(GameObject *parent, SDL_KeyCode jumpKey,
-                               float jumpForce, float cooldown, CollisionMatrix::Layers whatIsGround) : Component(parent) {
+                               float jumpForce, float cooldown, CollisionMatrix::Layer whatIsGround) : Component(parent) {
     this->jumpKey = jumpKey;
     this->jumpForce = jumpForce;
     this->cooldown = cooldown;
@@ -228,7 +228,9 @@ void JumpController::Update() {
             if (lastNormal.x != 0)
                 direction += lastNormal / 4;
 
+            rigidbody->velocity = Vector2(rigidbody->velocity.x, 0);
             rigidbody->AddForce(direction.Normalize() * jumpForce);
+
             grounded = false;
             lastJumpTime = SDL_GetTicks();
         }
@@ -307,11 +309,11 @@ void ShellBehavior::Update() {
 
 void ShellBehavior::Draw() {}
 
-void ShellBehavior::SetSender(GameObject *sender){
+void ShellBehavior::SetSender(GameObject *sender) {
     this->sender = sender;
 }
 
-GameObject *ShellBehavior::GetSender(){
+GameObject *ShellBehavior::GetSender() {
     return sender;
 }
 
@@ -541,11 +543,15 @@ void HPController::Update() {
 void HPController::Draw() {}
 
 void HPController::TakeDamage(int damage) {
-    if (isInvincible || isDead || SDL_GetTicks() - lastDamageTime < invincibleTime)
+    if (isDead || SDL_GetTicks() - lastDamageTime < invincibleTime)
         return;
     lastDamageTime = SDL_GetTicks();
-    currentHP -= damage;
+    if (!isInvincible)
+        currentHP -= damage;
+
     OnDamage.raise();
+    OnHPChange.raise();
+
     if (currentHP <= 0) {
         isDead = true;
         OnDeath.raise();
@@ -557,6 +563,9 @@ void HPController::Heal(int amount) {
     if (isDead)
         return;
     currentHP += amount;
+
+    OnHPChange.raise();
+
     if (currentHP > maxHP)
         currentHP = maxHP;
 }
@@ -569,8 +578,12 @@ void HPController::SetParticleSystem(ParticleSystem *particleSystem) {
     this->particleSystem = particleSystem;
 }
 
-int &HPController::GetHPRef() {
+int HPController::GetCurrentHP() {
     return currentHP;
+}
+
+int HPController::GetMaxHP() {
+    return maxHP;
 }
 
 bool HPController::IsDead() {
