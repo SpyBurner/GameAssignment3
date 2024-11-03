@@ -84,11 +84,16 @@ Collider2D::Collider2D(GameObject *parent, Vector2 offset, bool isTrigger) : Com
             defaultCollision(collider);
         });
     }
+
+    // Default layer set to parent's layer
+    this->layer = parent->layer;
 }
 
+// Default setting used for physical collision
 void Collider2D::defaultCollision(Collider2D *other) {
+    if (other->isTrigger) return;
+    if (other->layer == CollisionMatrix::DETECTION) return;
     Rigidbody2D *rb = other->gameObject->GetComponent<Rigidbody2D>();
-
     if (rb != nullptr) {
         Vector2 normal = this->GetNormal(other->gameObject->transform.position + other->offset);
 
@@ -140,6 +145,7 @@ void CollisionManager::AddCollider(Collider2D *collider) {
 }
 
 void CollisionManager::RemoveCollider(Collider2D *collider) {
+    
     for (int i = 0; i < this->colliders.size(); i++) {
         if (this->colliders[i] == collider) {
             this->colliders.erase(this->colliders.begin() + i);
@@ -158,7 +164,8 @@ void CollisionManager::Update() {
         for (size_t j = i + 1; j < this->colliders.size(); ++j) {
             Collider2D *collider2 = this->colliders[j];
             if (!collider2->enabled ||
-            !CollisionMatrix::checkCollisionMatrix(collider1->gameObject->layer, collider2->gameObject->layer)) {
+            (!CollisionMatrix::checkCollisionMatrix(collider1->layer, collider2->layer))
+            ) {
                 continue;
             }
             if (collider1->CheckCollision(collider2)) {

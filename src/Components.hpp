@@ -79,12 +79,12 @@ private:
     float cooldown = 0;
     float lastJumpTime = 0;
     bool grounded = false;
-    CollisionMatrix::Layers groundLayer = CollisionMatrix::DEFAULT;
+    CollisionMatrix::Layer groundLayer = CollisionMatrix::DEFAULT;
     Vector2 lastNormal = Vector2(0, 0);
     void OnCollisionEnter(Collider2D *collider);
 
 public:
-    JumpController(GameObject *parent, SDL_KeyCode jumpKey, float jumpForce, float cooldown, CollisionMatrix::Layers whatIsGround);
+    JumpController(GameObject *parent, SDL_KeyCode jumpKey, float jumpForce, float cooldown, CollisionMatrix::Layer whatIsGround);
     void Update();
     void Draw();
     void BindCollider(Collider2D *collider);
@@ -112,10 +112,16 @@ private:
     float speed;
     Vector2 direction;
 
+    GameObject *sender = nullptr;
 public:
     ShellBehavior(GameObject *parent, float lifeTime, float speed, Vector2 direction);
+
     void Update();
     void Draw();
+
+    void SetSender(GameObject *sender);
+    GameObject * GetSender();
+
     Component *Clone(GameObject *parent);
 };
 
@@ -133,6 +139,7 @@ private:
     ParticleSystem *particleSystem = nullptr;
     Joystick *joystick = nullptr;
 
+    float lastHandOff = 0;
 public:
     PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick);
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell);
@@ -187,6 +194,39 @@ public:
     Vector2 WorldToScreen(Vector2 worldPos);
     Vector2 ScreenToWorld(Vector2 screenPos);
     void SetFollow(GameObject *follow);
+    Component *Clone(GameObject *parent);
+};
+
+class HPController : public Component {
+private:
+    int maxHP;
+    int currentHP;
+    bool isDead = false;
+    bool isInvincible = false;
+
+    float invincibleTime = 0;
+    float lastDamageTime = 0;
+
+    ParticleSystem *particleSystem = nullptr;
+public:
+    Event<> OnDeath = Event<>();
+    Event<> OnDamage = Event<>();
+    Event<> OnHPChange = Event<>();
+    HPController(GameObject *parent, int maxHP, float invincibleTime);
+
+    void Update();
+    void Draw();
+    void TakeDamage(int damage);
+    void Heal(int amount);
+
+    void SetInvincible(bool invincible);
+    void SetParticleSystem(ParticleSystem *particleSystem);
+
+    int GetCurrentHP();
+    int GetMaxHP();
+
+    bool IsDead();
+
     Component *Clone(GameObject *parent);
 };
 
