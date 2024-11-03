@@ -2,6 +2,7 @@
 #define GAME_HPP
 
 #include<SDL2/SDL.h>
+#include "Components.hpp"
 class Game{
 
 public:    
@@ -29,8 +30,7 @@ public:
 
     static SDL_Event event;
 
-    int scoreTeam1 = 0;
-    int scoreTeam2 = 0;
+    static GameObject *CAMERA;
 
 private: 
     bool isRunning;

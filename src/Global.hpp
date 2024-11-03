@@ -2,6 +2,7 @@
 #define GLOBALS_HPP
 
 /*GameObject tags:
+    0 - Default
 */
 #define TAG_MAP 0
 
@@ -14,14 +15,16 @@ extern std::vector<SDL_Texture *> TEXTURES;
 
 //SETTINGS
 const int FPS = 60;
+
 const int WIDTH = 1280, HEIGHT = 720;
 // const int WIDTH = 1920, HEIGHT = 1080;
+
 const bool FULLSCREEN = false;
 const int TILE_SIZE = 16;
 
-#define VELOCITY_EPS 0.01
-#define EPS 0.0001
-#define GRAVITY_ACCELERATION 2.0f
+#define VELOCITY_EPS 0.1f
+#define EPS 0.0001f
+#define GRAVITY_ACCELERATION 9.8f  * 3 / FPS
 
 struct Tile {
     std::string type;

@@ -43,7 +43,8 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "cstring": "cpp"
     },
     "makefile.makePath": "mingw32-make"
 }

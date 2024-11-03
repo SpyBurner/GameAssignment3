@@ -10,8 +10,30 @@
 #include <vector>
 
 #include <SDL2/SDL_mixer.h>
+#include <stack>
 
 class GameObject;
+
+const int COLL_MATRIX_SIZE = 128;
+class CollisionMatrix {
+private:
+    static bool COLLISION_MATRIX[COLL_MATRIX_SIZE][COLL_MATRIX_SIZE];
+public:
+    enum Layers {
+        PLAYER = 1,
+        ENEMY = 2,
+        PROJECTILE = 4,
+        WALL = 8,
+        CAMERA = 16,
+        PARTICLE = 32,
+        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL | CAMERA | PARTICLE
+    };
+
+    static void init();
+    static bool checkCollisionMatrix(int a, int b);
+    static void setCollisionMatrix(int a, int b, bool value);
+};
+
 
 // Event
 template <typename... Args>
@@ -71,6 +93,7 @@ public:
     float operator*(Vector2 v);
     Vector2 operator/(float f);
     Vector2 operator+=(Vector2 v);
+    Vector2 operator-=(Vector2 v);
 
     float Magnitude();
     Vector2 Normalize();
@@ -84,6 +107,11 @@ public:
     static float Angle(Vector2 v1, Vector2 v2);
 
     static float SignedAngle(Vector2 v1, Vector2 v2);
+
+    static Vector2 ProjectToVector(Vector2 v, Vector2 onto);
+    static Vector2 ProjectToPlane(Vector2 v, Vector2 normal);
+
+    static Vector2 Rotate(Vector2 v, float angle);
 };
 
 Vector2 operator*(float f, Vector2 v);
@@ -93,6 +121,8 @@ Vector2 operator*(float f, Vector2 v);
 class GameObjectManager {
 private:
     std::map<std::string, GameObject *> gameObjects;
+    std::stack<GameObject *> objectToRemove;
+
     GameObjectManager();
     static GameObjectManager *instance;
 public:
@@ -133,7 +163,7 @@ public:
     SDL_Texture *spriteSheet = nullptr;
     SDL_Rect spriteRect;
 
-    bool isFlipped;
+    bool isFlippedH = false, isFlippedV = false;
 
     // static void SetRenderer(SDL_Renderer *renderer);
 
@@ -141,6 +171,7 @@ public:
     ~SpriteRenderer();
     void Update();
     void Draw();
+
     Component *Clone(GameObject *parent);
 
     int GetDrawOrder();
@@ -214,15 +245,20 @@ private:
     std::string name;
     std::vector<Component *> components;
 
+    bool enabled = true;
 public:
     Transform transform;
     int tag = 0;
+    int layer = CollisionMatrix::DEFAULT;
 
     GameObject();
     GameObject(std::string name);
     ~GameObject();
     void Update();
     void Draw();
+
+    void Enable();
+    void Disable();
 
     std::string GetName();
 
@@ -245,7 +281,6 @@ T *GameObject::GetComponent() {
     return nullptr;
 }
 
-// More like a template for the GameObjectManager
 class Scene {
 private:
     std::string name;
@@ -324,6 +359,7 @@ public:
     void ResumeSound();
 
 };
+
 
 class TileMap{
 private:

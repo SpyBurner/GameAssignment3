@@ -6,9 +6,10 @@
 class Rigidbody2D : public Component {
 private:
     Vector2 acceleration;
-    float mass, drag, bounciness;
-    float gravityScale;
+    float mass, drag;
 public:
+    float bounciness;
+    float gravityScale;
     Vector2 velocity;
 
     Rigidbody2D(GameObject *parent, float mass, float drag, float bounciness, float gravityScale);
@@ -29,11 +30,15 @@ public:
 };
 
 class Collider2D : public Component {
+private:
+    void defaultCollision(Collider2D *other);
 public:
+    bool isTrigger;
     Vector2 offset;
     Event<Collider2D *> OnCollisionEnter;
 
-    Collider2D(GameObject *parent, Vector2 offset);
+
+    Collider2D(GameObject *parent, Vector2 offset, bool isTrigger);
     ~Collider2D();
 
     void SetOffset(Vector2 offset);
@@ -44,6 +49,7 @@ public:
     virtual Component *Clone(GameObject *parent) = 0;
     virtual bool CheckCollision(Collider2D *other) = 0;
     virtual bool CheckCollision(Vector2 point) = 0;
+    virtual bool CheckCollision(SDL_Rect rect) = 0;
     virtual Vector2 GetNormal(Vector2 point) = 0;
 };
 
@@ -53,9 +59,11 @@ private:
     static CollisionManager *instance;
 
     std::vector<Collider2D *> colliders;
+    std::stack<Collider2D *> collidersToRemove;
 
 public:
     static CollisionManager *GetInstance();
+    ~CollisionManager();
 
     void AddCollider(Collider2D *collider);
     void RemoveCollider(Collider2D *collider);
@@ -69,7 +77,7 @@ class BoxCollider2D;
 class CircleCollider2D : public Collider2D {
 public:
     float radius;
-    CircleCollider2D(GameObject *parent, Vector2 offset, float radius);
+    CircleCollider2D(GameObject *parent, Vector2 offset, float radius, bool isTrigger);
     ~CircleCollider2D();
 
     void SetRadius(float radius);
@@ -80,6 +88,7 @@ public:
 
     bool CheckCollision(CircleCollider2D *other);
     bool CheckCollision(BoxCollider2D *other);
+    bool CheckCollision(SDL_Rect rect);
 
     bool CheckCollision(Vector2 point);
 
@@ -89,7 +98,7 @@ public:
 class BoxCollider2D : public Collider2D {
 public:
     Vector2 size;
-    BoxCollider2D(GameObject *parent, Vector2 offset, Vector2 size);
+    BoxCollider2D(GameObject *parent, Vector2 offset, Vector2 size, bool isTrigger);
     ~BoxCollider2D();
 
     void SetSize(Vector2 size);
@@ -100,6 +109,7 @@ public:
 
     bool CheckCollision(CircleCollider2D *other);
     bool CheckCollision(BoxCollider2D *other);
+    bool CheckCollision(SDL_Rect rect);
 
     bool CheckCollision(Vector2 point);
 

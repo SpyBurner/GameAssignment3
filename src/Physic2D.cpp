@@ -1,5 +1,5 @@
 #include "Physic2D.hpp"
-
+#include <math.h>
 CollisionManager *CollisionManager::instance = nullptr;
 
 #pragma region Rigidbody2D
@@ -51,16 +51,16 @@ void Rigidbody2D::BounceOff(Vector2 normal) {
     
     this->acceleration = Vector2(0, 0);
     // if (velocity.Magnitude() < 0.01f) {
-    //     velocity = velocity.Normalize();
+    //     velocity = normal * 2.0f;
     // }
     this->velocity = Reflect(this->velocity, normal) * this->bounciness;
 }
 
 Vector2 Rigidbody2D::Reflect(Vector2 velocity, Vector2 normal) {
-    if (normal.Magnitude() < EPS) {
-        //Ensure minimum velocity
-        velocity = velocity.Normalize();
-    }
+    // if (normal.Magnitude() < EPS) {
+    //     //Ensure minimum velocity
+    //     velocity = velocity.Normalize();
+    // }
     return velocity - 2 * (velocity.Dot(normal)) * normal;
 }
 
@@ -74,12 +74,44 @@ Component *Rigidbody2D::Clone(GameObject *parent) {
 #pragma region Collider2D
 
 // Collider2D Implementation
-Collider2D::Collider2D(GameObject *parent, Vector2 offset) : Component(parent) {
+Collider2D::Collider2D(GameObject *parent, Vector2 offset, bool isTrigger) : Component(parent) {
     this->offset = offset;
     CollisionManager::GetInstance()->AddCollider(this);
+
+    this->isTrigger = isTrigger;
+    if (!isTrigger){
+        this->OnCollisionEnter.addHandler([this](Collider2D *collider){
+            defaultCollision(collider);
+        });
+    }
+}
+
+void Collider2D::defaultCollision(Collider2D *other) {
+    Rigidbody2D *rb = other->gameObject->GetComponent<Rigidbody2D>();
+
+    if (rb != nullptr) {
+        Vector2 normal = this->GetNormal(other->gameObject->transform.position + other->offset);
+
+        // Project velocity onto the collision normal
+        Vector2 projected = Vector2::ProjectToVector(rb->velocity, normal);
+
+        if (projected.Magnitude() * rb->bounciness > rb->gravityScale * GRAVITY_ACCELERATION) {
+            rb->BounceOff(normal);
+            return;
+        }
+
+        if (Vector2::Dot(projected, normal) < 0) {
+            other->gameObject->transform.position += projected * -1;
+            rb->velocity = rb->velocity - projected;
+            if (normal == Vector2(0, 1)) {
+                rb->velocity = rb->velocity + Vector2(0, -1) * rb->gravityScale * GRAVITY_ACCELERATION;
+            }
+        }
+    }
 }
 
 Collider2D::~Collider2D() {
+    CollisionManager::GetInstance()->RemoveCollider(this);
 }
 
 void Collider2D::Update() {}
@@ -99,6 +131,10 @@ CollisionManager *CollisionManager::GetInstance() {
     return instance;
 }
 
+CollisionManager::~CollisionManager() {
+    this->Clear();
+}
+
 void CollisionManager::AddCollider(Collider2D *collider) {
     this->colliders.push_back(collider);
 }
@@ -113,15 +149,18 @@ void CollisionManager::RemoveCollider(Collider2D *collider) {
 }
 
 void CollisionManager::Update() {
-    for (auto &collider1 : this->colliders) {
+
+    for (size_t i = 0; i < this->colliders.size(); ++i) {
+        Collider2D *collider1 = this->colliders[i];
         if (!collider1->enabled) {
             continue;
         }
-        for (auto &collider2 : this->colliders) {
-            if (collider1->gameObject->GetName() == collider2->gameObject->GetName() || !collider2->enabled) {
+        for (size_t j = i + 1; j < this->colliders.size(); ++j) {
+            Collider2D *collider2 = this->colliders[j];
+            if (!collider2->enabled ||
+            !CollisionMatrix::checkCollisionMatrix(collider1->gameObject->layer, collider2->gameObject->layer)) {
                 continue;
             }
-
             if (collider1->CheckCollision(collider2)) {
                 collider1->OnCollisionEnter.raise(collider2);
                 collider2->OnCollisionEnter.raise(collider1);
@@ -135,7 +174,7 @@ void CollisionManager::Clear() {
 }
 
 // CircleCollider2D Implementation
-CircleCollider2D::CircleCollider2D(GameObject *parent, Vector2 offset, float radius) : Collider2D(parent, offset) {
+CircleCollider2D::CircleCollider2D(GameObject *parent, Vector2 offset, float radius, bool isTrigger) : Collider2D(parent, offset, isTrigger) {
     this->radius = radius;
 }
 
@@ -146,7 +185,7 @@ void CircleCollider2D::SetRadius(float radius){
 }
 
 Component *CircleCollider2D::Clone(GameObject *parent) {
-    CircleCollider2D *newCollider = new CircleCollider2D(parent, this->offset, this->radius);
+    CircleCollider2D *newCollider = new CircleCollider2D(parent, this->offset, this->radius, this->isTrigger);
     return newCollider;
 }
 
@@ -170,6 +209,16 @@ bool CircleCollider2D::CheckCollision(BoxCollider2D *other) {
     return ::CheckCollision(this, other);
 }
 
+bool CircleCollider2D::CheckCollision(SDL_Rect rect){
+    Vector2 thisPosition = this->gameObject->transform.position + this->offset;
+    Vector2 closestPoint = Vector2(
+        std::max((float)rect.x, std::min(thisPosition.x, (float)rect.x + rect.w)),
+        std::max((float)rect.y, std::min(thisPosition.y, (float)rect.y + rect.h))
+    );
+    float distance = (thisPosition - closestPoint).Magnitude();
+    return distance < this->radius;
+}
+
 bool CircleCollider2D::CheckCollision(Vector2 point) {
     Vector2 thisPosition = this->gameObject->transform.position + this->offset;
     float distance = (thisPosition - point).Magnitude();
@@ -181,7 +230,7 @@ Vector2 CircleCollider2D::GetNormal(Vector2 point) {
 }
 
 // BoxCollider2D Implementation
-BoxCollider2D::BoxCollider2D(GameObject *parent, Vector2 offset, Vector2 size) : Collider2D(parent, offset) {
+BoxCollider2D::BoxCollider2D(GameObject *parent, Vector2 offset, Vector2 size, bool isTrigger) : Collider2D(parent, offset, isTrigger) {
     this->size = size;
 }
 
@@ -192,7 +241,7 @@ void BoxCollider2D::SetSize(Vector2 size) {
 }
 
 Component *BoxCollider2D::Clone(GameObject *parent) {
-    BoxCollider2D *newCollider = new BoxCollider2D(parent, this->offset, this->size);
+    BoxCollider2D *newCollider = new BoxCollider2D(parent, this->offset, this->size, this->isTrigger);
     return newCollider;
 }
 
@@ -219,6 +268,19 @@ bool BoxCollider2D::CheckCollision(BoxCollider2D *other) {
     bool collisionY = box1Max.y >= box2Min.y && box1Min.y <= box2Max.y;
 
     return collisionX && collisionY;
+}
+
+bool BoxCollider2D::CheckCollision(SDL_Rect rect){
+    Vector2 boxMin = this->gameObject->transform.position - this->size / 2 + this->offset;
+    Vector2 boxMax = this->gameObject->transform.position + this->size / 2 + this->offset;
+
+    bool collisionX = boxMax.x >= rect.x && boxMin.x <= rect.x + rect.w;
+    bool collisionY = boxMax.y >= rect.y && boxMin.y <= rect.y + rect.h;
+
+    bool insideX = boxMin.x >= rect.x && boxMax.x <= rect.x + rect.w;
+    bool insideY = boxMin.y >= rect.y && boxMax.y <= rect.y + rect.h;
+
+    return (collisionX && collisionY) || (insideX && insideY);
 }
 
 bool BoxCollider2D::CheckCollision(Vector2 point) {

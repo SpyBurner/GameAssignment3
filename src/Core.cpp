@@ -1,6 +1,7 @@
 #include "Core.hpp"
 #include "Global.hpp"
 #include "Physic2D.hpp"
+#include "Components.hpp"
 #include <cmath>
 #include <iostream>
 #include <algorithm>
@@ -58,6 +59,12 @@ Vector2 Vector2::operator+=(Vector2 v) {
     return *this;
 }
 
+Vector2 Vector2::operator-=(Vector2 v) {
+    x -= v.x;
+    y -= v.y;
+    return *this;
+}
+
 float Vector2::Magnitude() {
     if (x == 0 && y == 0) {
         return 0;
@@ -107,6 +114,19 @@ float Vector2::SignedAngle(Vector2 v1, Vector2 v2) {
     return angle * (180.0f / M_PI); // Convert radians to degrees
 }
 
+Vector2 Vector2::ProjectToVector(Vector2 v, Vector2 onto){
+    return onto * (v.Dot(onto) / onto.Magnitude());
+}
+
+Vector2 Vector2::ProjectToPlane(Vector2 v, Vector2 normal){
+    return v - ProjectToVector(v, normal);
+}
+
+Vector2 Vector2::Rotate(Vector2 v, float angle) {
+    float rad = angle * (M_PI / 180.0f); // Convert degrees to radians
+    return Vector2(v.x * std::cos(rad) - v.y * std::sin(rad), v.x * std::sin(rad) + v.y * std::cos(rad));
+}
+
 #pragma endregion
 
 #pragma region GameObjectManager
@@ -140,7 +160,8 @@ void GameObjectManager::AddGameObject(GameObject *gameObject) {
 void GameObjectManager::RemoveGameObject(std::string name) {
     auto it = gameObjects.find(name);
     if (it != gameObjects.end()) {
-        delete it->second;
+        objectToRemove.push(it->second);
+        it->second->Disable();
         gameObjects.erase(it);
     }
 }
@@ -161,8 +182,20 @@ void GameObjectManager::Clear() {
 }
 
 void GameObjectManager::Update() {
+    //Copy to allow deletion during traversal
+    std::vector<GameObject*> objectsToUpdate;
     for (auto &pair : gameObjects) {
-        pair.second->Update();
+        objectsToUpdate.push_back(pair.second);
+    }
+
+    for (auto &gameObject : objectsToUpdate) {
+        gameObject->Update();
+    }
+
+    while (!objectToRemove.empty()) {
+        GameObject *gameObject = objectToRemove.top();
+        objectToRemove.pop();
+        delete gameObject;
     }
 }
 
@@ -217,15 +250,25 @@ GameObject::GameObject(std::string name) {
 
 GameObject::~GameObject() {
     for (auto &component : components) {
-        delete component;
+        if (component)
+            delete component;
     }
     components.clear();
 }
 
 void GameObject::Update() {
+    if (!enabled) return;
     for (auto &component : components) {
         component->Update();
     }
+}
+
+void GameObject::Enable() {
+    enabled = true;
+}
+
+void GameObject::Disable() {
+    enabled = false;
 }
 
 void GameObject::Draw() {
@@ -249,6 +292,9 @@ GameObject *GameObject::Instantiate(std::string name, const GameObject *origin, 
     newObject->transform.position = position;
     newObject->transform.rotation = rotation;
     newObject->transform.scale = scale;
+
+    newObject->tag = origin->tag;
+    newObject->layer = origin->layer;
 
     // Deep copy components
     for (auto &component : origin->components) {
@@ -276,7 +322,8 @@ Component::~Component() {}
 //     SpriteRenderer::renderer = renderer;
 // }
 
-SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, int drawOrder, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
+SpriteRenderer::SpriteRenderer(GameObject *gameObject, Vector2 spriteSize, 
+    int drawOrder, SDL_Texture *defaultSpriteSheet) : Component(gameObject) {
     this->drawOrder = drawOrder;
 
     this->spriteSheet = spriteSheet;
@@ -315,10 +362,29 @@ void SpriteRenderer::Draw() {
     destRect.w = spriteRect.w * transform->scale.x;
     destRect.h = spriteRect.h * transform->scale.y;
 
+    if (Game::CAMERA) {
+        SDL_Rect drawCheckRect;
+        drawCheckRect.x = gameObject->transform.position.x - spriteRect.w * transform->scale.x / 2;
+        drawCheckRect.y = gameObject->transform.position.y - spriteRect.h * transform->scale.y / 2;
+        drawCheckRect.w = spriteRect.w * transform->scale.x;
+        drawCheckRect.h = spriteRect.h * transform->scale.y;
+
+        if (!Game::CAMERA->GetComponent<Collider2D>()->CheckCollision(drawCheckRect)) {
+            return;
+        }
+
+        Vector2 newPos = Game::CAMERA->GetComponent<Camera>()->WorldToScreen(Vector2(destRect.x, destRect.y));
+        destRect.x = newPos.x;
+        destRect.y = newPos.y;
+    }
+
     // Copy the sprite to the renderer
-    // SDL_RenderCopy(RENDERER, spriteSheet, &spriteRect, &destRect);
-    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, SDL_FLIP_NONE);
+    // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
+    // CANNOT FLIP BOTH H AND V
+    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, 
+        ((isFlippedH)? SDL_FLIP_HORIZONTAL : ((isFlippedV)? SDL_FLIP_VERTICAL : SDL_FLIP_NONE)));
 }
+
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
     SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), drawOrder, spriteSheet);
@@ -858,3 +924,43 @@ void TileMap::LoadTileMap(std::string mapPath) {
 }
 
 #pragma endregion
+
+#pragma region CollisionMatrix
+// Initialize the static member
+bool CollisionMatrix::COLLISION_MATRIX[COLL_MATRIX_SIZE][COLL_MATRIX_SIZE];
+
+void CollisionMatrix::init() {
+    for (int i = 0; i < COLL_MATRIX_SIZE; i++) {
+        for (int j = i; j < COLL_MATRIX_SIZE; j++) {
+            if (i == DEFAULT || j == DEFAULT) {
+                setCollisionMatrix(i, j, true);
+                continue;
+            }
+            setCollisionMatrix(i, j, false);
+        }
+    }
+}
+
+bool CollisionMatrix::checkCollisionMatrix(int a, int b) {
+
+    return COLLISION_MATRIX[std::min(a, b)][std::max(a, b)];
+
+    // Check all combinations of bits set in a and b
+    // for (int i = 0; i < COLL_MATRIX_SIZE; ++i) {
+    //     for (int j = i; j < COLL_MATRIX_SIZE; ++j) {
+    //         if ((a & (1 << i)) && (b & (1 << j))) {
+    //             if (COLLISION_MATRIX[std::min(i, j)][std::max(i, j)]) {
+    //                 return true;
+    //             }
+    //         }
+    //     }
+    // }
+    // return false;
+}
+
+void CollisionMatrix::setCollisionMatrix(int a, int b, bool value) {
+    // Set only 1 direction of the relationship
+    COLLISION_MATRIX[std::min(a, b)][std::max(a, b)] = value;
+}
+#pragma endregion
+
