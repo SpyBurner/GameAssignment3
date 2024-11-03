@@ -56,4 +56,41 @@ public:
     Component *Clone(GameObject *parent);
 };
 
+class RangedAI : public Component {
+private:
+    enum State {
+        WALK,
+    } state = WALK;
+
+    GameObject *target = nullptr;
+
+    HPController *hp = nullptr;
+    Rigidbody2D *rb = nullptr;
+    Animator *animator = nullptr;
+    BoxCollider2D *baseCol = nullptr;
+
+    //Movement
+    float speed = 1.0f;
+    void Move();
+
+    //Attack
+    std::function<GameObject *(Vector2 direction, float speed, float lifeTime, Vector2 position)> createAttack = nullptr;
+    float attackRange = 1.0f;
+    float attackCooldown = 1.0f;
+    float lastAttackTime = 0;
+    void Attack();
+    
+public:
+    RangedAI(GameObject *parent, float speed, float attackRange, float attackCooldown);
+    ~RangedAI();
+
+    void SetCreateAttack(std::function<GameObject *(Vector2 direction, float speed, float lifeTime, Vector2 position)>);
+    void SetTarget(GameObject *target);
+
+    void Update();
+    void Draw();
+
+    Component *Clone(GameObject *parent);
+};
+
 #endif

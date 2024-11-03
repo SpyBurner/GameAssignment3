@@ -25,11 +25,12 @@ const bool FULLSCREEN = false;
 
 const int PLAYER_SPEED = 18;
 const int MELEE_SPEED = 4;
+const int RANGED_SPEED = 1;
 
 
 const int PLAYER_HP = 3;
-const int MELEE_HP = 15;
-const int RANGED_HP = 5;
+const int MELEE_HP = 12;
+const int RANGED_HP = 20;
 const int MOAI_HP = 50;
 
 const float PLAYER_INVINCIBILITY_TIME = 1500;
@@ -44,8 +45,12 @@ const int RANGED_DAMAGE = 1;
 const int MOAI_DAMAGE = 1;
 
 const float MELEE_ATTACK_COOLDOWN = 600;
-const float RANGED_ATTACK_COOLDOWN = 1000;
+const float RANGED_ATTACK_COOLDOWN = 2000;
 
 const float MELEE_ATTACK_RANGE = 100;
+
+const float RANGED_PROJECTILE_LIFETIME = 3000;
+const float RANGED_PROJECTILE_SPEED = 10;
+const float RANGED_ATTACK_RANGE = 400;
 
 #endif // GLOBALS_HPP

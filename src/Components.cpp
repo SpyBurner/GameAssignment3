@@ -363,8 +363,8 @@ void PlayerShoot::Update() {
         lastHandOff = SDL_GetTicks();
     }
 
-    //60 ms to aim before shooting
-    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 60) {
+    //100 ms to aim before shooting
+    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 100) {
 
         for (int i = 0; i < shootAmount; i++) {
 
@@ -466,8 +466,6 @@ Component *FLipToVelocity::Clone(GameObject *parent) {
 }
 
 Camera::Camera(GameObject *parent, GameObject *follow, Vector2 size, Vector2 offset, float speed, Vector2 deadZone) : Component(parent) {
-    this->follow = follow;
-
     this->size = size;
     this->offset = offset;
 
@@ -476,6 +474,8 @@ Camera::Camera(GameObject *parent, GameObject *follow, Vector2 size, Vector2 off
     this->speed = speed;
 
     rigidbody = gameObject->GetComponent<Rigidbody2D>();
+
+    SetFollow(follow);
 }
 
 void Camera::Update() {
@@ -520,6 +520,15 @@ Vector2 Camera::ScreenToWorld(Vector2 screenPos) {
 
 void Camera::SetFollow(GameObject *follow) {
     this->follow = follow;
+
+    if (follow == nullptr)
+        return;
+
+    HPController *hpController = follow->GetComponent<HPController>();
+
+    hpController->OnDeath.addHandler([this]() {
+        this->follow = nullptr;
+    });
 }
 
 Component *Camera::Clone(GameObject *parent) {
