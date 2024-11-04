@@ -15,6 +15,7 @@
 #include <time.h>
 SDL_Event Game::event;
 GameObject *Game::CAMERA = nullptr;
+int Game::coin = 0;
 
 // #define MENU_DEBUG 1
 
@@ -84,16 +85,13 @@ void Game::objectInit() {
     srand(time(NULL));
 
     // Add sounds and music
-    //  SoundManager::GetInstance();
-    //  SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/fairyfountain.mp3", 100);
-    //  SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/papyrus.mp3", 32);
-
+    SoundManager::GetInstance();
     SoundManager::GetInstance()->AddSound("Jump", "Assets/SFX/jump.wav", 128);
     SoundManager::GetInstance()->AddSound("Shotgun", "Assets/SFX/shotgun.wav", 128);
     SoundManager::GetInstance()->AddSound("Pickup", "Assets/SFX/pickup.wav", 128);
     SoundManager::GetInstance()->AddSound("Hurt", "Assets/SFX/hurt.wav", 128);
     SoundManager::GetInstance()->AddSound("HookShoot", "Assets/SFX/hookshoot.wav", 128);
-    SoundManager::GetInstance()->AddSound("GameOver", "Assets/SFX/gameover.wav", 128);
+    SoundManager::GetInstance()->AddSound("GameOver", "Assets/SFX/gameover.mp3", 128);
 
 #pragma region Collision Matrix
     CollisionMatrix::init();
@@ -1242,6 +1240,51 @@ void Game::objectInit() {
         
 #pragma endregion
 
+#pragma region UI
+        GameObject *coinUI = new GameObject("CoinUI");
+        coinUI->transform.position = Vector2(0, 0);
+        coinUI->transform.scale = Vector2(2, 2);
+
+        //Dummy sprite
+        coinUI->AddComponent(new SpriteRenderer(coinUI, Vector2(100, 20), 20, nullptr));
+        coinUI->AddComponent(new TextRenderer(coinUI, "Coins: 0", SDL_Color{255, 255, 255, 255}, 20, "Assets/Fonts/arial.ttf"));
+
+        player->GetComponent<CoinCollector>()->OnCoinCollect.addHandler([coinUI, player](){
+            int coinCount = player->GetComponent<CoinCollector>()->GetCoinCount();
+            coinUI->GetComponent<TextRenderer>()->SetText("Coins: " + std::to_string(coinCount));
+            Game::coin = coinCount;
+        });
+
+        coinUI->AddComponent(new BindToCamera(coinUI, Vector2(WIDTH / 2 - 300, - HEIGHT / 2 + 20)));
+
+        GameObjectManager::GetInstance()->AddGameObject(coinUI);
+
+        GameObject *HPBar = new GameObject("HPBar");
+        HPBar->transform.position = Vector2(0, 0);
+        HPBar->transform.scale = Vector2(2, 2);
+
+        HPBar->AddComponent(new SpriteRenderer(HPBar, Vector2(100, 10), 20, LoadSpriteSheet("Assets/Sprites/Menu/HPBar.png")));
+
+        HPBar->AddComponent(new Animator(HPBar,
+        {
+            AnimationClip("3", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 0, 0),
+            AnimationClip("2", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 1, 1),
+            AnimationClip("1", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 2, 2),
+            AnimationClip("0", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 3, 3),
+        }));
+        HPBar->GetComponent<Animator>()->Play("3");
+
+        player->GetComponent<HPController>()->OnHPChange.addHandler([HPBar, player](){
+            int hp = player->GetComponent<HPController>()->GetCurrentHP();
+            HPBar->GetComponent<Animator>()->Play(std::to_string(hp));
+        });
+
+        HPBar->AddComponent(new BindToCamera(HPBar, Vector2(- WIDTH / 2 + 70, - HEIGHT / 2 + 20)));
+
+        GameObjectManager::GetInstance()->AddGameObject(HPBar);
+
+#pragma endregion
+
     });
     SceneManager::GetInstance()->AddScene(gameScene);
 #endif
@@ -1254,10 +1297,17 @@ void Game::objectInit() {
         SoundManager::GetInstance()->PlaySound("GameOver");
 
         GameObject *gameOver = new GameObject("GameOver");
+        gameOver->transform.position = Vector2(640, 200);
         
         gameOver->AddComponent(new TextRenderer(gameOver, "Game Over", SDL_Color{255, 255, 255, 255}, 60, "Assets/Fonts/arial.ttf"));
 
         GameObjectManager::GetInstance()->AddGameObject(gameOver);
+
+        GameObject *score = new GameObject("Score");
+        score->transform.position = Vector2(640, 300);
+
+        score->AddComponent(new TextRenderer(score, "Coin: " + Game::coin, SDL_Color{255, 255, 255, 255}, 40, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(score);
 
         GameObject *quitButton = new GameObject("QuitButton");
         quitButton->transform.scale = Vector2(2, 2);
@@ -1272,11 +1322,12 @@ void Game::objectInit() {
 
         quitButton->AddComponent(new Button(quitButton));
         quitButton->GetComponent<Button>()->AddOnClickHandler([this](){
-                Game::state = MENU;
+            Game::state = MENU;
         });
 
         GameObjectManager::GetInstance()->AddGameObject(quitButton);
     });
+    SceneManager::GetInstance()->AddScene(gameOverScene);
 
     SceneManager::GetInstance()->LoadScene("Menu");
 }
@@ -1301,20 +1352,28 @@ void Game::handleEvents() {
 void Game::handleSceneChange() {
     switch (state) {
     case MENU:
-        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Menu")
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Menu"){
+            Game::CAMERA = nullptr;
             SceneManager::GetInstance()->LoadScene("Menu");
+        }
         break;
     case OPTION:
-        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Option")
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Option"){
+            Game::CAMERA = nullptr;
             SceneManager::GetInstance()->LoadScene("Option");
+        }
         break;
     case GAME:
-        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game"){
+            Game::coin = 0;
             SceneManager::GetInstance()->LoadScene("Game");
+        }
         break;
     case GAMEOVER:
-        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver")
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver"){
+            Game::CAMERA = nullptr;
             SceneManager::GetInstance()->LoadScene("GameOver");
+        }
         break;
     }
 }

@@ -32,6 +32,7 @@ public:
     static SDL_Event event;
 
     static GameObject *CAMERA;
+    static int coin;
 
 private: 
     bool isRunning;

@@ -345,11 +345,9 @@ void SpriteRenderer::Update() {}
 
 void SpriteRenderer::Draw() {
     if (!RENDERER) {
-        throw "Renderer is null in SpriteRenderer::Draw()";
         return;
     }
     if (!spriteSheet) {
-        throw "SpriteSheet is null in SpriteRenderer::Draw()";
         return;
     }
     SDL_Rect destRect;
@@ -381,10 +379,11 @@ void SpriteRenderer::Draw() {
     // Copy the sprite to the renderer
     // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
     // CANNOT FLIP BOTH H AND V
+    destRect.x += offset.x;
+    destRect.y += offset.y;
     SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, 
         ((isFlippedH)? SDL_FLIP_HORIZONTAL : ((isFlippedV)? SDL_FLIP_VERTICAL : SDL_FLIP_NONE)));
 }
-
 
 Component *SpriteRenderer::Clone(GameObject *parent) {
     SpriteRenderer *newRenderer = new SpriteRenderer(parent, Vector2(spriteRect.w, spriteRect.h), drawOrder, spriteSheet);

@@ -265,6 +265,7 @@ class CoinCollector : public Component {
 private:
     int coinCount = 0;
 public:
+    Event<> OnCoinCollect = Event<>();
     CoinCollector(GameObject *parent);
     void Update();
     void Draw();
@@ -349,5 +350,14 @@ public:
     Component *Clone(GameObject *parent);
 };
 
+class BindToCamera : public Component {
+private:
+    Vector2 offset;
+public:
+    BindToCamera(GameObject *parent, Vector2 offset);
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
+};
 
 #endif

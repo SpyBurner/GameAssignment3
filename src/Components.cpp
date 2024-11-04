@@ -708,6 +708,7 @@ void CoinCollector::Draw() {}
 
 void CoinCollector::AddCoin() {
     coinCount++;
+    OnCoinCollect.raise();
 }
 
 int CoinCollector::GetCoinCount() {
@@ -907,4 +908,21 @@ void TextRenderer::SetText(std::string newText) {
 
 Component *TextRenderer::Clone(GameObject *parent) {
     return new TextRenderer(parent, text, color, fontSize, fontPath);
+}
+
+
+BindToCamera::BindToCamera(GameObject *parent, Vector2 offset) : Component(parent) {
+    this->offset = offset;
+}
+void BindToCamera::Update(){
+    if (Game::CAMERA == nullptr || !enabled)
+        return;
+    
+    gameObject->transform.position = Game::CAMERA->transform.position + offset;
+}
+
+void BindToCamera::Draw(){}
+Component *BindToCamera::Clone(GameObject *parent){
+    BindToCamera *newBindToCamera = new BindToCamera(parent, offset);
+    return newBindToCamera;
 }
