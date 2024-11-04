@@ -227,6 +227,7 @@ void GameObjectManager::Draw() {
 
     for (auto &gameObject : sortedGameObjects) {
         gameObject->Draw();
+        // std::cout << gameObject->GetName() << "transform: " << gameObject->transform.position.x << ", " << gameObject->transform.position.y << std::endl;
     }
 }
 
@@ -379,10 +380,10 @@ void SpriteRenderer::Draw() {
     }
 
     // Copy the sprite to the renderer
-    // SDL_RenderCopy(renderer, spriteSheet, &spriteRect, &destRect);
+    SDL_RenderCopy(RENDERER, spriteSheet, &spriteRect, &destRect);
     // CANNOT FLIP BOTH H AND V
-    SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, 
-        ((isFlippedH)? SDL_FLIP_HORIZONTAL : ((isFlippedV)? SDL_FLIP_VERTICAL : SDL_FLIP_NONE)));
+    // SDL_RenderCopyEx(RENDERER, spriteSheet, &spriteRect, &destRect, transform->rotation, nullptr, 
+    //     ((isFlippedH)? SDL_FLIP_HORIZONTAL : ((isFlippedV)? SDL_FLIP_VERTICAL : SDL_FLIP_NONE)));
 }
 
 
@@ -811,7 +812,7 @@ TileMap* TileMap::GetInstance() {
     return instance;
 }
 
-void TileMap::InitTileSet(std::string sheetPath, std::string jsonPath) {
+void TileMap::InitTileSet(std::string sheetPath) {
     std::cout << "TileMap::InitTileSet" << std::endl;
     // Load the sprite sheet
     tileMapSheet = LoadSpriteSheet(sheetPath);
@@ -823,6 +824,7 @@ void TileMap::InitTileSet(std::string sheetPath, std::string jsonPath) {
         int posY = tileData.position.posY;
         int size = tileData.size;
         std::string tileId;
+        SDL_Rect tileRect = { posX * TILE_SIZE, posY * TILE_SIZE, size * TILE_SIZE, size * TILE_SIZE };
 
         if (type.find("land") != std::string::npos) {
             if (type == "land") {
@@ -835,8 +837,8 @@ void TileMap::InitTileSet(std::string sheetPath, std::string jsonPath) {
                 newGameObject->tag = 0;
 
                 newGameObject->AddComponent(new SpriteRenderer(newGameObject, Vector2(size * TILE_SIZE, size * TILE_SIZE), 0, tileMapSheet));
-                newGameObject->GetComponent<SpriteRenderer>()->spriteRect = {posX * TILE_SIZE, posY * TILE_SIZE, size * TILE_SIZE, size * TILE_SIZE};
-                newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE)));
+                newGameObject->GetComponent<SpriteRenderer>()->spriteRect = tileRect;
+                newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE), false));
                 newGameObject->GetComponent<SpriteRenderer>()->enabled = false;
                 newGameObject->GetComponent<BoxCollider2D>()->enabled = false;
 
@@ -851,8 +853,8 @@ void TileMap::InitTileSet(std::string sheetPath, std::string jsonPath) {
                 newGameObject->tag = 0;
 
                 newGameObject->AddComponent(new SpriteRenderer(newGameObject, Vector2(size * TILE_SIZE, size * TILE_SIZE), 0, tileMapSheet));
-                newGameObject->GetComponent<SpriteRenderer>()->spriteRect = {posX * TILE_SIZE, posY * TILE_SIZE, size * TILE_SIZE, size * TILE_SIZE};
-                newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE)));
+                newGameObject->GetComponent<SpriteRenderer>()->spriteRect = tileRect;
+                newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE), false));
                 newGameObject->GetComponent<SpriteRenderer>()->enabled = false;
                 newGameObject->GetComponent<BoxCollider2D>()->enabled = false;
 
@@ -866,8 +868,8 @@ void TileMap::InitTileSet(std::string sheetPath, std::string jsonPath) {
             newGameObject->tag = 0;
 
             newGameObject->AddComponent(new SpriteRenderer(newGameObject, Vector2(size * TILE_SIZE, size * TILE_SIZE), 0, tileMapSheet));
-            newGameObject->GetComponent<SpriteRenderer>()->spriteRect = {posX * TILE_SIZE, posY * TILE_SIZE, size * TILE_SIZE, size * TILE_SIZE};
-            newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE)));
+            newGameObject->GetComponent<SpriteRenderer>()->spriteRect = tileRect;
+            newGameObject->AddComponent(new BoxCollider2D(newGameObject, Vector2(0, 0), Vector2(size * TILE_SIZE, size * TILE_SIZE), false));
             newGameObject->GetComponent<SpriteRenderer>()->enabled = false;
             newGameObject->GetComponent<BoxCollider2D>()->enabled = false;
 
@@ -882,10 +884,10 @@ void TileMap::InitTileSet(std::string sheetPath, std::string jsonPath) {
     std::cout << "TileMap::InitTileSet done" << std::endl;
 }
 
-void TileMap::LoadTileMap(std::string mapPath) {
+void TileMap::LoadTileMap() {
     std::cout << "TileMap loaded" << std::endl;
     int x = 0, y = 0;
-    int scale = 3;
+    float scale = 7.5;
     // Initialize tileMap from JSON data
     for (const auto& row : TILEMAP_0) {
         std::vector<std::string> rowVector;
@@ -897,8 +899,8 @@ void TileMap::LoadTileMap(std::string mapPath) {
             std::cout << id << std::endl;
             rowVector.push_back(id);
 
-            GameObject* newTile = tileSet[id]->Instantiate(
-                id,
+            GameObject* newTile = GameObject::Instantiate(
+                id + std::to_string(x) + std::to_string(y),
                 tileSet[id],
                 Vector2(x * TILE_SIZE * scale, y * TILE_SIZE * scale),
                 0.0f,
@@ -911,6 +913,7 @@ void TileMap::LoadTileMap(std::string mapPath) {
             Transform tranform = newTile->transform;
             std::cout << "tranform: " << tranform.position.x << ", " << tranform.position.y << std::endl;
             newTile->GetComponent<BoxCollider2D>()->enabled = true;
+
             tiles.push_back(newTile);
             GameObjectManager::GetInstance()->AddGameObject(newTile);
             x++;

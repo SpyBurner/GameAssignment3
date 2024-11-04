@@ -365,7 +365,6 @@ class TileMap{
 private:
     SDL_Texture* tileMapSheet;
     // an map to mark tile with id, each tile is a GameObject that has a SpriteRenderer, a BoxCollider2D, ...
-    // std::map<std::string, GameObject *> tileSet;
     std::map<std::string, GameObject *> tileSet;
     // 2D array of tile, each tile in tileMap is represented by it id, a json file will be used to initialize the whole map
     std::vector<std::vector<std::string>> tileMapById;
@@ -378,8 +377,8 @@ private:
 public:
     static TileMap* GetInstance();
 
-    void InitTileSet(std::string sheetPath, std::string jsonPath);
-    void LoadTileMap(std::string mapPath);
+    void InitTileSet(std::string sheetPath);
+    void LoadTileMap();
     void SetTile();
     GameObject* GetTile();
     void Update();

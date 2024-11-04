@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iostream>
 #include <SDL2/SDL_mixer.h>
+#include <string>
 
 SDL_Event Game::event;
 GameObject *Game::CAMERA = nullptr;
@@ -293,9 +294,8 @@ void Game::objectInit() {
     SceneManager::GetInstance()->AddScene(gameScene);
     SceneManager::GetInstance()->LoadScene("Game");
 
-    TileMap::GetInstance()->InitTileSet("Assets/tileset.png", "/tilemap_sheet_structure.json");
-
-    TileMap::GetInstance()->LoadTileMap("Assets/tile_map_0.json");
+    TileMap::GetInstance()->InitTileSet("Assets/tileset.png");
+    TileMap::GetInstance()->LoadTileMap();
 }
 
 void Game::handleEvents() {
