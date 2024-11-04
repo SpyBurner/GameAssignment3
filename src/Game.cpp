@@ -66,7 +66,14 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
     }
 
     state = MENU;
-    objectInit();
+
+    try {
+        objectInit();
+    }
+    catch (const char *msg) {
+        std::cerr << msg << std::endl;
+        isRunning = false;
+    }
 }
 
 GameObject *player = new GameObject("Player");
@@ -324,8 +331,8 @@ void Game::objectInit() {
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
         //tile 9 3 for start
-        //tile 81 14 for boss room
-        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(9, 3);
+        //tile 88 13 for boss room
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13);
         // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
@@ -668,24 +675,29 @@ void Game::objectInit() {
 
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
         ));
 
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8), CreateHookUpgrade
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8), CreateHookUpgrade
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHookUpgrade
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateBootUpgrade
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateShield
         ));
 
         // GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8)));
@@ -917,7 +929,7 @@ void Game::objectInit() {
         auto CreateRanged = [player, CreateRangedProjectile, enemyHurtParticle, CreateCoin, CreateHeal](Vector2 position){
             GameObject *ranged = new GameObject("Ranged");
             ranged->layer = CollisionMatrix::ENEMY;
-            ranged->transform.position = Vector2(2000, 100);
+            ranged->transform.position = position;
             ranged->transform.scale = Vector2(2, 2);
 
             ranged->AddComponent(new SpriteRenderer(ranged, Vector2(0, 0), 5, nullptr));
@@ -970,6 +982,109 @@ void Game::objectInit() {
             tilemap->GetComponent<Tilemap>()->GetPositionFromTile(24, 4)
         ));
 
+#pragma endregion
+
+#pragma region Moai projectile
+        auto CreateMoaiProjectile = [shellParticle](Vector2 direction, float speed, float lifeTime, Vector2 position){
+            GameObject *moaiProjectile = new GameObject("MoaiProjectile" + std::to_string(rand() + rand()));
+            moaiProjectile->layer = CollisionMatrix::E_PROJECTILE;
+            moaiProjectile->transform.scale = Vector2(4, 4);
+            moaiProjectile->transform.position = position;
+
+            moaiProjectile->AddComponent(new SpriteRenderer(moaiProjectile, Vector2(0, 0), 20, nullptr));
+
+            moaiProjectile->AddComponent(new Animator(moaiProjectile,
+            {
+                AnimationClip("Default", "Assets/Sprites/Enemy/moai_projectile.png", Vector2(32, 32), 700, true, 1.0, 0, 3),
+            }));
+            moaiProjectile->GetComponent<Animator>()->Play("Default");
+
+            moaiProjectile->AddComponent(new Rigidbody2D(moaiProjectile, 1, 0.025, 0, 0.0));
+            
+            moaiProjectile->AddComponent(new ShellBehavior(moaiProjectile, lifeTime, speed, direction));
+
+            moaiProjectile->AddComponent(new ParticleSystem(moaiProjectile, shellParticle, 10, 500, -1 * direction, 0, 0));
+
+            moaiProjectile->AddComponent(new CircleCollider2D(moaiProjectile, Vector2(0, 0), 32 * moaiProjectile->transform.scale.x / 2, true));
+        
+            moaiProjectile->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([moaiProjectile](Collider2D *collider) {
+                if (collider->layer == CollisionMatrix::PLAYER) {
+                    HPController *hpController = collider->gameObject->GetComponent<HPController>();
+                    if (hpController)
+                        hpController->TakeDamage(MOAI_DAMAGE);
+                }
+
+                GameObjectManager::GetInstance()->RemoveGameObject(moaiProjectile->GetName());
+            });
+            moaiProjectile->AddComponent(new MoaiProjectileDelay(moaiProjectile, rand() % 200));
+
+            return moaiProjectile;
+        };
+#pragma endregion
+
+#pragma region Moai setup
+        auto CreateMoai = [player, CreateMelee, CreateRanged, CreateMoaiProjectile, enemyHurtParticle](Vector2 position){
+            GameObject *moai = new GameObject("Moai" + std::to_string(rand() + rand()));
+            moai->layer = CollisionMatrix::ENEMY;
+            moai->transform.position = position;
+            moai->transform.scale = Vector2(2, 2);
+
+            moai->AddComponent(new SpriteRenderer(moai, Vector2(87, 112), 5, nullptr));
+
+            moai->AddComponent(new Animator(moai,
+            {
+                AnimationClip("Idle", "Assets/Sprites/Enemy/moai_idle.png", Vector2(87, 112), 1000, true, 2.0, 0, 3),
+                AnimationClip("Attack", "Assets/Sprites/Enemy/moai_charge.png", Vector2(87, 112), 5000, false, 1.0, 0, 3),
+            }));
+            moai->GetComponent<Animator>()->Play("Idle");
+
+            moai->AddComponent(new Rigidbody2D(moai, 1, 0.025, 0.0, 0.0));
+
+            moai->AddComponent(new FLipToVelocity(moai, Vector2(1, 0)));
+            //Physic collider
+            moai->AddComponent(new BoxCollider2D(moai, Vector2(0, 0),
+                Vector2(87 * moai->transform.scale.x, 112 * moai->transform.scale.y)
+            , false));
+
+            // Hitbox collider
+            BoxCollider2D *moai_hitbox = dynamic_cast<BoxCollider2D *>(
+                moai->AddComponent(new BoxCollider2D(moai, Vector2(0, 0),
+                    Vector2(87 * moai->transform.scale.x, 112 * moai->transform.scale.y), true))
+            );
+            moai_hitbox->OnCollisionEnter.addHandler([moai](Collider2D *collider) {
+                if (collider->layer == CollisionMatrix::PLAYER) {
+                    HPController *hpController = collider->gameObject->GetComponent<HPController>();
+                    if (hpController)
+                        hpController->TakeDamage(MOAI_DAMAGE);
+                }
+            });
+            moai_hitbox->layer = CollisionMatrix::E_PROJECTILE;
+
+            moai->AddComponent(new HPController(moai, MOAI_HP, 0));
+
+            ParticleSystem *enemyHurtParticleSystem = dynamic_cast<ParticleSystem *>(
+                moai->AddComponent(new ParticleSystem(moai, enemyHurtParticle, 50, 2000, Vector2(0, -1), 20, 360)));
+            enemyHurtParticleSystem->Stop();
+            
+            moai->GetComponent<HPController>()->OnDamage.addHandler([enemyHurtParticleSystem]() {
+                enemyHurtParticleSystem->Emit(2);
+            });
+
+            moai->AddComponent(new MoaiAI(moai, MOAI_SPEED, MOAI_DETECT_RANGE, MOAI_ATTACK_RANGE, MOAI_ATTACK_COOLDOWN));
+
+            moai->GetComponent<MoaiAI>()->AddSpawnFunction(CreateMelee);
+            moai->GetComponent<MoaiAI>()->AddSpawnFunction(CreateRanged);
+            moai->GetComponent<MoaiAI>()->SetCreateAttack(CreateMoaiProjectile);
+
+            moai->GetComponent<MoaiAI>()->SetTarget(player);
+            return moai;
+        };
+
+        GameObjectManager::GetInstance()->AddGameObject(CreateMoai(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(99, 5)
+        ));
+
+        
 #pragma endregion
 
     });

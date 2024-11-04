@@ -17,6 +17,8 @@ Rigidbody2D::Rigidbody2D(GameObject *parent, float mass, float drag, float bounc
 Rigidbody2D::~Rigidbody2D() {}
 
 void Rigidbody2D::Update() {
+    if (!enabled) return;
+
     this->velocity += this->acceleration + gravityScale * Vector2(0, 1) * GRAVITY_ACCELERATION;
     this->acceleration = Vector2(0, 0);
 
