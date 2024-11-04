@@ -266,3 +266,171 @@ void RangedAI::Attack() {
 }
 
 #pragma endregion
+#pragma region MoaiAI
+
+
+
+MoaiProjectileDelay::MoaiProjectileDelay(GameObject *parent, float delayTime) : Component(parent) {
+    this->delayTime = delayTime;
+    this->startTime = SDL_GetTicks();
+}
+
+MoaiProjectileDelay::~MoaiProjectileDelay(){
+
+}
+
+void MoaiProjectileDelay::Update(){
+    rb = gameObject->GetComponent<Rigidbody2D>();
+    if (rb){
+        rb->enabled = false;
+        if (SDL_GetTicks() - startTime >= delayTime){
+            rb->enabled = true;
+        }
+    }
+}
+
+void MoaiProjectileDelay::Draw(){}
+
+Component *MoaiProjectileDelay::Clone(GameObject *parent){
+
+}
+
+////////////////
+MoaiAI::MoaiAI(GameObject *parent, float speed, float alertRange, float attackRange, float attackCooldown) : Component(parent) {
+    this->speed = speed;
+    this->alertRange = alertRange;
+    this->attackRange = attackRange;
+    this->attackCooldown = attackCooldown;
+}
+
+MoaiAI::~MoaiAI() {}
+
+void MoaiAI::SetCreateAttack(std::function<GameObject *(Vector2 direction, float speed, float lifeTime, Vector2 position)> createAttack) {
+    this->createAttack = createAttack;
+}
+
+void MoaiAI::AddSpawnFunction(std::function<GameObject *(Vector2 position)> spawnFunction) {
+    this->spawnFunctions.push_back(spawnFunction);
+}
+
+void MoaiAI::SetTarget(GameObject *target) {
+    this->target = target;
+
+    HPController *hp = target->GetComponent<HPController>();
+
+    hp->OnDeath.addHandler([this]() {
+        this->target = nullptr;
+    });
+}
+
+void MoaiAI::Update() {
+    if (!hp) {
+        hp = gameObject->GetComponent<HPController>();
+        if (hp == nullptr) {
+            throw "HPController not found in MoaiAI::Update()";
+        }
+    }
+
+    if (!enabled || !target || hp->IsDead() || hp->IsStunned())
+        return;
+
+    if (rb == nullptr) {
+        rb = gameObject->GetComponent<Rigidbody2D>();
+        if (rb == nullptr) {
+            throw "Rigidbody2D not found in MoaiAI::Update()";
+        }
+    }
+
+    if (animator == nullptr) {
+        animator = gameObject->GetComponent<Animator>();
+        if (animator == nullptr) {
+            throw "Animator not found in MoaiAI::Update()";
+        }
+    }
+
+    if (!target) {
+        return;
+    }
+    if (state == WALK) {
+        Vector2 distance = target->transform.position - gameObject->transform.position;
+
+        if (distance.Magnitude() > alertRange) {
+            return;
+        } 
+
+        if (distance.Magnitude() <= attackRange) {
+            if (SDL_GetTicks() - lastAttackTime >= attackCooldown) {
+                state = ATTACK;
+                return;
+            }
+        } 
+
+        animator->Play("Idle");
+        Move();
+        
+    } else if (state == ATTACK) {
+        if (animator->GetCurrentClip()->GetName() != "Attack") {
+            animator->Play("Attack");
+        }
+        if (animator->GetCurrentClip()->IsFinished()) {
+            Attack();
+            state = WALK;
+        }
+    }
+}
+
+void MoaiAI::Draw() {}
+
+Component *MoaiAI::Clone(GameObject *parent) {
+    return new MoaiAI(parent, speed, alertRange, attackRange, attackCooldown);
+}
+
+void MoaiAI::Move() {
+    Vector2 direction = (target->transform.position - gameObject->transform.position).Normalize();
+    rb->AddForce(direction * speed);
+
+    if (rb->velocity.Magnitude() > speed) {
+        rb->velocity = rb->velocity.Normalize() * speed;
+    }
+}
+
+void MoaiAI::Attack() {
+    if (SDL_GetTicks() - lastAttackTime < attackCooldown)
+        return;
+    lastAttackTime = SDL_GetTicks() + rand() % (int)MOAI_ATTACK_COOLDOWN_RANDOM * 2 - (int)MOAI_ATTACK_COOLDOWN_RANDOM;
+
+    int r = rand() % 2;
+    if (r == 0) {
+        Vector2 compensation = target->GetComponent<Rigidbody2D>()->velocity * 4;
+        Vector2 direction = (target->transform.position - gameObject->transform.position + compensation).Normalize();
+
+        for (int i = 0; i < 5; i++) {
+            int angle = 20;
+            Vector2 newDirection = Vector2::Rotate(direction, angle * i * (i % 2 == 0 ? 1 : -1));
+
+            GameObject *attack = createAttack(newDirection, MOAI_PROJECTILE_SPEED, MOAI_PROJECTILE_LIFETIME, gameObject->transform.position);
+
+            GameObjectManager::GetInstance()->AddGameObject(attack);
+        }      
+    }
+    else{
+        int amount = rand() % 2 + 1;
+        for (int i = 0; i < amount; i++) {
+            srand(SDL_GetTicks());
+            int r = rand() % spawnFunctions.size();
+
+            GameObject *spawned = spawnFunctions[r](gameObject->transform.position);
+            Rigidbody2D *rb = spawned->GetComponent<Rigidbody2D>();
+            std:: cout << "Spawned" << spawned->GetName() << std::endl;
+            if (rb) {
+                Vector2 direction = Vector2(0, -1);
+                direction = Vector2::Rotate(direction, rand() % 180 - 90);
+
+                rb->AddForce(direction * POWER_UP_POP_UP_FORCE);
+            }
+
+            GameObjectManager::GetInstance()->AddGameObject(spawned);
+        }
+    }
+}
+#pragma endregion

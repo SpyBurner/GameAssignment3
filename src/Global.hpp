@@ -26,11 +26,12 @@ const bool FULLSCREEN = false;
 const int PLAYER_SPEED = 19;
 const int MELEE_SPEED = 2;
 const int RANGED_SPEED = 1;
+const int MOAI_SPEED = 2;
 
 const int PLAYER_HP = 3;
 const int MELEE_HP = 12;
-const int RANGED_HP = 20;
-const int MOAI_HP = 50;
+const int RANGED_HP = 15;
+const int MOAI_HP = 125;
 
 const float PLAYER_INVINCIBILITY_TIME = 1500;
 
@@ -56,6 +57,13 @@ const float RANGED_PROJECTILE_LIFETIME = 3000;
 const float RANGED_PROJECTILE_SPEED = 10;
 const float RANGED_DETECT_RANGE = 700;
 const float RANGED_ATTACK_RANGE = 400;
+
+const float MOAI_PROJECTILE_LIFETIME = 3000;
+const float MOAI_PROJECTILE_SPEED = 8;
+const float MOAI_DETECT_RANGE = 1200;
+const float MOAI_ATTACK_RANGE = 700;
+const float MOAI_ATTACK_COOLDOWN = 3000;
+const float MOAI_ATTACK_COOLDOWN_RANDOM = 1000;
 
 const float BOX_MAX_SPEED = 10;
 
