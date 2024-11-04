@@ -163,7 +163,7 @@ SDL_Texture *LoadSpriteSheet(std::string path);
 class SpriteRenderer : public Component {
 private:
     int drawOrder = 0;
-
+    Vector2 offset = Vector2(0, 0);
 public:
     SDL_Texture *spriteSheet = nullptr;
     SDL_Rect spriteRect;

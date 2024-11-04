@@ -235,6 +235,8 @@ void JumpController::Update() {
 
             grounded = false;
             lastJumpTime = SDL_GetTicks();
+
+            SoundManager::GetInstance()->PlaySound("Jump");
         }
     }
     
@@ -339,7 +341,7 @@ call setSpawnFunction to set the function that will create the shell
 */
 
 PlayerWeapon::PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown,
-                         float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem) : Component(parent) {
+                         float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem, std::string sfx) : Component(parent) {
     this->shellSpeed = shellSpeed;
     this->shellLifetime = shellLifeTime;
 
@@ -349,6 +351,8 @@ PlayerWeapon::PlayerWeapon(GameObject *parent, float shellSpeed, float shellLife
 
     this->particleSystem = particleSystem;
     this->joystick = joystick;
+
+    this->sfx = sfx;
 }
 
 void PlayerWeapon::setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell) {
@@ -399,6 +403,9 @@ void PlayerWeapon::Update() {
         if (particleSystem) {
             particleSystem->Emit(1);
         }
+
+        if (sfx != "")
+            SoundManager::GetInstance()->PlaySound(sfx);
     }
 }
 
@@ -455,7 +462,7 @@ Orbit::Orbit(GameObject *parent, GameObject *target, float radius, Vector2 origi
 }
 
 void Orbit::Update() {
-    if (target == nullptr)
+    if (target == nullptr || !enabled)
         return;
 
     if (joystick == nullptr) {
@@ -631,6 +638,7 @@ void HPController::TakeDamage(int damage) {
     if (!isInvincible)
         currentHP -= damage;
 
+    SoundManager::GetInstance()->PlaySound("Hurt");
     OnDamage.raise();
     OnHPChange.raise();
 
@@ -700,6 +708,7 @@ void CoinCollector::Draw() {}
 
 void CoinCollector::AddCoin() {
     coinCount++;
+    OnCoinCollect.raise();
 }
 
 int CoinCollector::GetCoinCount() {
@@ -766,6 +775,8 @@ PowerUp::PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObj
                     hpController->Heal(this->healAmount);
                 }
                 GameObject::Destroy(gameObject->GetName());
+
+                SoundManager::GetInstance()->PlaySound("Pickup");
             }
         });
     } else {
@@ -796,4 +807,122 @@ void PowerUpBox::Draw() {}
 Component *PowerUpBox::Clone(GameObject *parent) {
     PowerUpBox *newPowerUpBox = new PowerUpBox(parent, powerUpFunction);
     return newPowerUpBox;
+}
+
+
+Button::Button(GameObject *parent) : Component(parent) {
+    onClick = new Event<>();
+}
+
+Button::~Button() {
+    delete onClick;
+}
+
+void Button::Update() {
+    if (collider == nullptr) {
+        collider = gameObject->GetComponent<Collider2D>();
+        if (collider == nullptr)
+            return;
+    }
+
+    if (Game::event.type == SDL_MOUSEBUTTONDOWN) {
+        Vector2 mousePosition = Vector2(Game::event.button.x, Game::event.button.y);
+        if (collider->CheckCollision(mousePosition)) {
+            this->onClick->raise();
+        }
+    }
+}
+
+void Button::Draw() {}
+
+void Button::AddOnClickHandler(std::function<void()> handler) {
+    onClick->addHandler(handler);
+}
+
+Component *Button::Clone(GameObject *parent) {
+    Button *newButton = new Button(parent);
+    newButton->onClick = onClick;
+    return newButton;
+}
+
+TextRenderer::TextRenderer(GameObject *parent, std::string text, SDL_Color color, int fontSize, std::string fontPath) 
+    : Component(parent), text(text), color(color), fontSize(fontSize), fontPath(fontPath) {
+    // Load font and create texture
+    TTF_Font *font = TTF_OpenFont(fontPath.c_str(), fontSize);
+    if (font) {
+        SDL_Surface *surface = TTF_RenderText_Solid(font, text.c_str(), color);
+        if (surface) {
+            texture = SDL_CreateTextureFromSurface(RENDERER, surface);
+            SDL_FreeSurface(surface);
+        }
+        TTF_CloseFont(font);
+    }
+}
+
+TextRenderer::~TextRenderer() {
+    if (texture) {
+        SDL_DestroyTexture(texture);
+    }
+}
+
+void TextRenderer::Update() {
+    if (needUpdate) {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+        TTF_Font *font = TTF_OpenFont(fontPath.c_str(), fontSize * gameObject->transform.scale.y);
+        if (font) {
+            SDL_Surface *surface = TTF_RenderText_Solid(font, text.c_str(), color);
+            if (surface) {
+                texture = SDL_CreateTextureFromSurface(RENDERER, surface);
+                SDL_FreeSurface(surface);
+            }
+            TTF_CloseFont(font);
+        }
+        needUpdate = false;
+    }
+}
+
+void TextRenderer::Draw() {
+    if (texture) {
+        SDL_Rect destRect;
+        destRect.x = gameObject->transform.position.x;
+        destRect.y = gameObject->transform.position.y;
+        destRect.w = 0;
+        destRect.h = 0;
+
+        SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
+        SDL_QueryTexture(texture, nullptr, nullptr, &destRect.w, &destRect.h);
+
+        destRect.x -= destRect.w / 2;
+        destRect.y -= destRect.h / 2;
+
+        SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
+    }
+}
+
+void TextRenderer::SetText(std::string newText) {
+    text = newText;
+    needUpdate = true;
+}
+
+Component *TextRenderer::Clone(GameObject *parent) {
+    return new TextRenderer(parent, text, color, fontSize, fontPath);
+}
+
+
+BindToCamera::BindToCamera(GameObject *parent, Vector2 offset) : Component(parent) {
+    this->offset = offset;
+}
+void BindToCamera::Update(){
+    if (Game::CAMERA == nullptr || !enabled)
+        return;
+    
+    gameObject->transform.position = Game::CAMERA->transform.position + offset;
+}
+
+void BindToCamera::Draw(){}
+Component *BindToCamera::Clone(GameObject *parent){
+    BindToCamera *newBindToCamera = new BindToCamera(parent, offset);
+    return newBindToCamera;
 }

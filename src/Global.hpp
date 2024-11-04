@@ -10,6 +10,10 @@
 
 extern SDL_Renderer* RENDERER;
 extern std::vector<SDL_Texture *> TEXTURES;
+extern int spawnID;
+
+extern int musicVolume;
+extern int sfxVolume;
 
 //SETTINGS
 const int FPS = 60;
@@ -59,10 +63,10 @@ const float RANGED_DETECT_RANGE = 700;
 const float RANGED_ATTACK_RANGE = 400;
 
 const float MOAI_PROJECTILE_LIFETIME = 3000;
-const float MOAI_PROJECTILE_SPEED = 8;
+const float MOAI_PROJECTILE_SPEED = 10;
 const float MOAI_DETECT_RANGE = 1200;
 const float MOAI_ATTACK_RANGE = 700;
-const float MOAI_ATTACK_COOLDOWN = 3000;
+const float MOAI_ATTACK_COOLDOWN = 2000;
 const float MOAI_ATTACK_COOLDOWN_RANDOM = 1000;
 
 const float BOX_MAX_SPEED = 10;

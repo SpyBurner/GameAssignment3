@@ -146,8 +146,10 @@ private:
     Joystick *joystick = nullptr;
 
     float lastHandOff = 0;
+
+     std::string sfx = "";
 public:
-    PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem);
+    PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem, std::string sfx = "");
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell);
     void Update();
     void Draw();
@@ -263,6 +265,7 @@ class CoinCollector : public Component {
 private:
     int coinCount = 0;
 public:
+    Event<> OnCoinCollect = Event<>();
     CoinCollector(GameObject *parent);
     void Update();
     void Draw();
@@ -306,6 +309,52 @@ public:
     
     GameObject *GetPowerUp();
 
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
+};
+
+class Button : public Component {
+private:
+    Collider2D *collider = nullptr;
+
+    Event<> *onClick = nullptr;
+
+public:
+    Button(GameObject *parent);
+    ~Button();
+
+    void Update();
+
+    void Draw();
+
+    void AddOnClickHandler(std::function<void()> handler);
+
+    Component *Clone(GameObject *parent);
+};
+
+class TextRenderer : public Component {
+private:
+    std::string text;
+    SDL_Texture *texture = nullptr;
+    SDL_Color color;
+    int fontSize;
+    std::string fontPath;
+    bool needUpdate = true;
+public:
+    TextRenderer(GameObject *parent, std::string text, SDL_Color color, int fontSize, std::string fontPath);
+    ~TextRenderer();
+    void Update();
+    void Draw();
+    void SetText(std::string text);
+    Component *Clone(GameObject *parent);
+};
+
+class BindToCamera : public Component {
+private:
+    Vector2 offset;
+public:
+    BindToCamera(GameObject *parent, Vector2 offset);
     void Update();
     void Draw();
     Component *Clone(GameObject *parent);

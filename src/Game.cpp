@@ -12,9 +12,12 @@
 #include <SDL2/SDL_mixer.h>
 #include <iostream>
 #include <math.h>
-
+#include <time.h>
 SDL_Event Game::event;
 GameObject *Game::CAMERA = nullptr;
+int Game::coin = 0;
+
+// #define MENU_DEBUG 1
 
 Game::Game() {
     isRunning = false;
@@ -79,17 +82,16 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
 GameObject *player = new GameObject("Player");
 
 void Game::objectInit() {
+    srand(time(NULL));
 
     // Add sounds and music
-    //  SoundManager::GetInstance();
-    //  SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/fairyfountain.mp3", 100);
-    //  SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/papyrus.mp3", 32);
-
-    // SoundManager::GetInstance()->AddSound("ball_bounce", "Assets/SFX/ball_bounce.mp3", 128);
-    // SoundManager::GetInstance()->AddSound("ball_kick", "Assets/SFX/ball_kick.mp3", 128);
-
-    // SoundManager::GetInstance()->AddSound("Game_Over", "Assets/SFX/gameover.mp3", 128);
-    // SoundManager::GetInstance()->AddSound("Goal", "Assets/SFX/score.mp3", 64);
+    SoundManager::GetInstance();
+    SoundManager::GetInstance()->AddSound("Jump", "Assets/SFX/jump.wav", 128);
+    SoundManager::GetInstance()->AddSound("Shotgun", "Assets/SFX/shotgun.wav", 128);
+    SoundManager::GetInstance()->AddSound("Pickup", "Assets/SFX/pickup.wav", 128);
+    SoundManager::GetInstance()->AddSound("Hurt", "Assets/SFX/hurt.wav", 128);
+    SoundManager::GetInstance()->AddSound("HookShoot", "Assets/SFX/hookshoot.wav", 128);
+    SoundManager::GetInstance()->AddSound("GameOver", "Assets/SFX/gameover.mp3", 128);
 
 #pragma region Collision Matrix
     CollisionMatrix::init();
@@ -131,6 +133,211 @@ void Game::objectInit() {
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::GATE, CollisionMatrix::WALL, true);
 #pragma endregion
 
+    Scene *menuScene = new Scene("Menu");
+
+    menuScene->AssignLogic([menuScene, this](){
+        Game::state = MENU;
+        GameObject *title = new GameObject("Title");
+        title->transform.position = Vector2(640, 200);
+        title->transform.scale = Vector2(3, 3);
+
+        title->AddComponent(new SpriteRenderer(title, Vector2(128, 128), 10, LoadSpriteSheet("Assets/Sprites/Menu/alien_evil_name.png")));
+        
+        GameObjectManager::GetInstance()->AddGameObject(title);
+
+#pragma region button
+        GameObject *newGameButton = new GameObject("NewGameButton");
+        newGameButton->transform.position = Vector2(640, 400);
+        newGameButton->transform.scale = Vector2(4, 4);
+
+        newGameButton->AddComponent(new SpriteRenderer(newGameButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/NewGameButton.png")));
+
+        newGameButton->AddComponent(new BoxCollider2D(newGameButton, Vector2(0, 0), 
+            Vector2(32 * newGameButton->transform.scale.x, 16 * newGameButton->transform.scale.y), 
+        true));
+        
+        newGameButton->AddComponent(new Button(newGameButton));
+
+        newGameButton->GetComponent<Button>()->AddOnClickHandler([menuScene, this]() {
+            Game::state = GAME;
+        });
+        GameObjectManager::GetInstance()->AddGameObject(newGameButton);
+
+        GameObject *optionButton = new GameObject("OptionButton");
+        optionButton->transform.position = Vector2(640, 500);
+        optionButton->transform.scale = Vector2(4, 4);
+
+        optionButton->AddComponent(new SpriteRenderer(optionButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/OptionButton.png")));
+
+        optionButton->AddComponent(new BoxCollider2D(optionButton, Vector2(0, 0), 
+            Vector2(32 * optionButton->transform.scale.x, 16 * optionButton->transform.scale.y),
+        true));
+
+        optionButton->AddComponent(new Button(optionButton));
+
+        optionButton->GetComponent<Button>()->AddOnClickHandler([menuScene, this]() {
+            Game::state = OPTION;
+        });
+        GameObjectManager::GetInstance()->AddGameObject(optionButton);
+
+        GameObject *exitButton = new GameObject("ExitButton");
+        exitButton->transform.position = Vector2(640, 600);
+        exitButton->transform.scale = Vector2(4, 4);
+
+        exitButton->AddComponent(new SpriteRenderer(exitButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/ExitButton.png")));
+
+        exitButton->AddComponent(new BoxCollider2D(exitButton, Vector2(0, 0), 
+            Vector2(32 * exitButton->transform.scale.x, 16 * exitButton->transform.scale.y),
+        true));
+
+        exitButton->AddComponent(new Button(exitButton));
+        exitButton->GetComponent<Button>()->AddOnClickHandler([menuScene, this]() {
+            isRunning = false;
+        });
+        GameObjectManager::GetInstance()->AddGameObject(exitButton);
+
+#pragma endregion
+
+    });
+    SceneManager::GetInstance()->AddScene(menuScene);
+
+    Scene *optionScene = new Scene("Option");
+    optionScene->AssignLogic([optionScene, this]() {
+        Game::state = OPTION;
+#pragma region Music Volume
+        GameObject *musicLabel = new GameObject("MusicLabel");
+        musicLabel->transform.position = Vector2(640, 100);
+        musicLabel->transform.scale = Vector2(5, 5);
+
+        musicLabel->AddComponent(new TextRenderer(musicLabel, "Music Volume", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *musicText = new GameObject("MusicText");
+        musicText->transform.position = Vector2(650, 250);
+        musicText->transform.scale = Vector2(5, 5);
+
+        musicText->AddComponent(new TextRenderer(musicText, std::to_string(musicVolume), SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *musicUpButton = new GameObject("MusicUpButton");
+        musicUpButton->transform.position = Vector2(800, 250);
+        musicUpButton->transform.scale = Vector2(5, 5);
+
+        musicUpButton->AddComponent(new SpriteRenderer(musicUpButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/right_button.png")));
+
+        musicUpButton->AddComponent(new BoxCollider2D(musicUpButton, Vector2(0, 0), 
+            Vector2(16 * musicUpButton->transform.scale.x, 16 * musicUpButton->transform.scale.y),
+        true));
+
+        musicUpButton->AddComponent(new Button(musicUpButton));
+
+        musicUpButton->GetComponent<Button>()->AddOnClickHandler([musicText]() {
+            musicVolume = std::min(128, musicVolume + 10);
+            Mix_VolumeMusic(musicVolume);
+            musicText->GetComponent<TextRenderer>()->SetText(std::to_string(musicVolume));
+        });
+
+        GameObject *musicDownButton = new GameObject("MusicDownButton");
+
+        musicDownButton->transform.position = Vector2(500, 250);
+        musicDownButton->transform.scale = Vector2(5, 5);
+
+        musicDownButton->AddComponent(new SpriteRenderer(musicDownButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/left_button.png")));
+
+        musicDownButton->AddComponent(new BoxCollider2D(musicDownButton, Vector2(0, 0), 
+            Vector2(16 * musicDownButton->transform.scale.x, 16 * musicDownButton->transform.scale.y),
+        true));
+
+        musicDownButton->AddComponent(new Button(musicDownButton));
+
+        musicDownButton->GetComponent<Button>()->AddOnClickHandler([musicText]() {
+            musicVolume = std::max(0, musicVolume - 10);
+            Mix_VolumeMusic(musicVolume);
+            musicText->GetComponent<TextRenderer>()->SetText(std::to_string(musicVolume));
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(musicLabel);
+        GameObjectManager::GetInstance()->AddGameObject(musicText);
+        GameObjectManager::GetInstance()->AddGameObject(musicUpButton);
+        GameObjectManager::GetInstance()->AddGameObject(musicDownButton);
+#pragma endregion
+
+#pragma region SFX volume
+        GameObject *sfxLabel = new GameObject("SFXLabel");
+        sfxLabel->transform.position = Vector2(640, 500);
+        sfxLabel->transform.scale = Vector2(5, 5);
+
+        sfxLabel->AddComponent(new TextRenderer(sfxLabel, "SFX Volume", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *sfxText = new GameObject("SFXText");
+        sfxText->transform.position = Vector2(650, 650);
+        sfxText->transform.scale = Vector2(5, 5);
+
+        sfxText->AddComponent(new TextRenderer(sfxText, std::to_string(sfxVolume), SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *sfxUpButton = new GameObject("SFXUpButton");
+        sfxUpButton->transform.position = Vector2(800, 650);
+        sfxUpButton->transform.scale = Vector2(5, 5);
+
+        sfxUpButton->AddComponent(new SpriteRenderer(sfxUpButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/right_button.png")));
+
+        sfxUpButton->AddComponent(new BoxCollider2D(sfxUpButton, Vector2(0, 0), 
+            Vector2(16 * sfxUpButton->transform.scale.x, 16 * sfxUpButton->transform.scale.y),
+        true));
+
+        sfxUpButton->AddComponent(new Button(sfxUpButton));
+
+        sfxUpButton->GetComponent<Button>()->AddOnClickHandler([sfxText]() {
+            sfxVolume = std::min(128, sfxVolume + 10);
+            Mix_Volume(-1, sfxVolume);
+            sfxText->GetComponent<TextRenderer>()->SetText(std::to_string(sfxVolume));
+        });
+
+        GameObject *sfxDownButton = new GameObject("SFXDownButton");
+
+        sfxDownButton->transform.position = Vector2(500, 650);
+        sfxDownButton->transform.scale = Vector2(5, 5);
+
+        sfxDownButton->AddComponent(new SpriteRenderer(sfxDownButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/left_button.png")));
+
+        sfxDownButton->AddComponent(new BoxCollider2D(sfxDownButton, Vector2(0, 0), 
+            Vector2(16 * sfxDownButton->transform.scale.x, 16 * sfxDownButton->transform.scale.y),
+        true));
+
+        sfxDownButton->AddComponent(new Button(sfxDownButton));
+
+        sfxDownButton->GetComponent<Button>()->AddOnClickHandler([sfxText]() {
+            sfxVolume = std::max(0, sfxVolume - 10);
+            Mix_Volume(-1, sfxVolume);
+            sfxText->GetComponent<TextRenderer>()->SetText(std::to_string(sfxVolume));
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(sfxLabel);
+        GameObjectManager::GetInstance()->AddGameObject(sfxText);
+        GameObjectManager::GetInstance()->AddGameObject(sfxUpButton);
+        GameObjectManager::GetInstance()->AddGameObject(sfxDownButton);
+#pragma endregion
+        
+        GameObject *quitButton = new GameObject("QuitButton");
+        quitButton->transform.scale = Vector2(2, 2);
+
+        quitButton->transform.position = Vector2(1280 - 32 * 2 / 2, 32 * 2 / 2);
+
+        quitButton->AddComponent(new SpriteRenderer(quitButton, Vector2(32, 32), 0, LoadSpriteSheet("Assets/Sprites/Menu/Quit_button.png")));
+
+        quitButton->AddComponent(new BoxCollider2D(quitButton, Vector2(0, 0), 
+            Vector2(32 * quitButton->transform.scale.x, 32 * quitButton->transform.scale.y)
+        ,true));
+
+        quitButton->AddComponent(new Button(quitButton));
+        quitButton->GetComponent<Button>()->AddOnClickHandler([this](){
+                Game::state = MENU;
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(quitButton);
+
+    });
+    SceneManager::GetInstance()->AddScene(optionScene);
+
+#ifndef MENU_DEBUG
     Scene *gameScene = new Scene("Game");
     gameScene->AssignLogic([gameScene, this]() {
         Game::state = GAME;
@@ -144,64 +351,6 @@ void Game::objectInit() {
         tilemap->AddComponent(new Tilemap(tilemap, Vector2(16, 16), Vector2(112, 144),  false, 0, LoadSpriteSheet("Assets/Sprites/Tileset/tileset.png"), "Assets/tilemap_rebuilt.txt"));
 
         GameObjectManager::GetInstance()->AddGameObject(tilemap);
-#pragma endregion
-
-#pragma region Wall Setup
-        // GameObject *wall = new GameObject("Wall");
-        // wall->layer = CollisionMatrix::WALL;
-        // wall->transform.rotation = 0;
-        // wall->transform.position = Vector2(1000, 700);
-        // wall->transform.scale = Vector2(500, 2);
-        // wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(7500, 60), false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(wall);
-        // // Left Wall
-        // GameObject *leftWall = new GameObject("LeftWall");
-        // leftWall->layer = CollisionMatrix::WALL;
-        // leftWall->transform.rotation = 0;
-        // leftWall->transform.position = Vector2(-200, 400); // Adjust position as needed
-        // leftWall->transform.scale = Vector2(3, 100);       // Adjust scale as needed
-        // leftWall->AddComponent(new SpriteRenderer(leftWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // leftWall->AddComponent(new BoxCollider2D(leftWall, Vector2(0, 0), Vector2(45, 3000), false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(leftWall);
-
-        // // Right Wall
-        // GameObject *rightWall = new GameObject("RightWall");
-        // rightWall->layer = CollisionMatrix::WALL;
-        // rightWall->transform.rotation = 0;
-        // rightWall->transform.position = Vector2(2000, 400); // Adjust position as needed
-        // rightWall->transform.scale = Vector2(2, 100);       // Adjust scale as needed
-        // rightWall->AddComponent(new SpriteRenderer(rightWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // rightWall->AddComponent(new BoxCollider2D(rightWall, Vector2(0, 0), Vector2(30, 1500), false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(rightWall);
-
-        // // AI Test Walls
-        // GameObject *lowWall1 = new GameObject("LowWall1");
-        // lowWall1->layer = CollisionMatrix::WALL;
-        // lowWall1->transform.rotation = 0;
-        // lowWall1->transform.position = Vector2(50, 600); // Adjust position as needed
-        // lowWall1->transform.scale = Vector2(5, 5);       // Adjust scale as needed
-        // lowWall1->AddComponent(new SpriteRenderer(lowWall1, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // lowWall1->AddComponent(new BoxCollider2D(lowWall1, Vector2(0, 0),
-        //                                          Vector2(15 * lowWall1->transform.scale.x, 30 * lowWall1->transform.scale.y),
-        //                                          false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(lowWall1);
-
-        // GameObject *lowWall2 = new GameObject("LowWall2");
-        // lowWall2->layer = CollisionMatrix::WALL;
-        // lowWall2->transform.rotation = 0;
-        // lowWall2->transform.position = Vector2(1000, 600); // Adjust position as needed
-        // lowWall2->transform.scale = Vector2(100, 5);       // Adjust scale as needed
-        // lowWall2->AddComponent(new SpriteRenderer(lowWall2, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // lowWall2->AddComponent(new BoxCollider2D(lowWall2, Vector2(0, 0),
-        //                                          Vector2(15 * lowWall2->transform.scale.x, 30 * lowWall2->transform.scale.y),
-        //                                          false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(lowWall2);
 #pragma endregion
 
 #pragma region Shell Setup
@@ -230,7 +379,7 @@ void Game::objectInit() {
         }));
 
         auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
-            GameObject *shell = new GameObject("Shell" + std::to_string(rand() + rand()));
+            GameObject *shell = new GameObject("Shell" + std::to_string(spawnID++));
             shell->transform.scale = Vector2(2, 2);
             shell->layer = CollisionMatrix::PROJECTILE;
             shell->transform.position = position;
@@ -283,7 +432,7 @@ void Game::objectInit() {
         hookParticle->AddComponent(new CircleCollider2D(hookParticle, Vector2(0, 0), 3, true));
 
         auto CreateHook = [hookParticle](float speed, Vector2 direction, float lifeTime, Vector2 position){
-            GameObject *hook = new GameObject("hook" + std::to_string(rand() + rand()));
+            GameObject *hook = new GameObject("hook" + std::to_string(spawnID++));
             hook->transform.scale = Vector2(2, 2);
             hook->layer = CollisionMatrix::PROJECTILE;
             hook->transform.position = position;
@@ -332,7 +481,7 @@ void Game::objectInit() {
         player->layer = CollisionMatrix::PLAYER;
         //tile 9 3 for start
         //tile 88 13 for boss room
-        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13);
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(9, 3);
         // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
@@ -370,7 +519,7 @@ void Game::objectInit() {
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT)));
 
         PlayerWeapon *shotgun = dynamic_cast<PlayerWeapon *>(
-            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, PLAYER_SHOTGUN_PELLET, 10, aimStick, shellDropPS))
+            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, PLAYER_SHOTGUN_PELLET, 10, aimStick, shellDropPS, "Shotgun"))
         );
         shotgun->setSpawnFunction(CreateShell);
 
@@ -408,6 +557,10 @@ void Game::objectInit() {
             std::cout << "Player HP: " << player->GetComponent<HPController>()->GetCurrentHP() << std::endl;
         });
 
+        player->GetComponent<HPController>()->OnDeath.addHandler([this]() {
+            Game::state = GAMEOVER;
+        });
+
         player->AddComponent(new CoinCollector(player));
 
 #pragma endregion
@@ -424,6 +577,10 @@ void Game::objectInit() {
         player->GetComponent<HPController>()->OnDeath.addHandler([gun]() {
             gun->AddComponent(new AutoDestroy(gun, 5000));
             gun->AddComponent(new CircleCollider2D(gun, Vector2(0, 0), 8, true));
+            gun->AddComponent(new Rigidbody2D(gun, 1, 0.025, 0, 1.0));
+
+            gun->GetComponent<Rigidbody2D>()->AddForce(Vector2(0, -1) * POWER_UP_POP_UP_FORCE);
+            gun->GetComponent<Orbit>()->enabled = false;
         });
 
         GameObjectManager::GetInstance()->AddGameObject(gun);
@@ -445,7 +602,7 @@ void Game::objectInit() {
 
 #pragma region Powerup
         auto CreateHeal = [player](Vector2 position){
-            GameObject *heal = new GameObject("Heal" + std::to_string(rand() + rand()));
+            GameObject *heal = new GameObject("Heal" + std::to_string(spawnID++));
             heal->layer = CollisionMatrix::POWERUP;
 
             heal->transform.position = position;
@@ -478,7 +635,7 @@ void Game::objectInit() {
         };
 
         auto CreateHookUpgrade = [player, aimStick, CreateHook](Vector2 position){
-            GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(rand() + rand()));
+            GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(spawnID++));
             hookUpgrade->layer = CollisionMatrix::POWERUP;
 
             hookUpgrade->transform.position = position;
@@ -493,7 +650,7 @@ void Game::objectInit() {
             
             auto UnlockHook = [aimStick, CreateHook](GameObject *player){
                 PlayerWeapon *meatHook = dynamic_cast<PlayerWeapon *>(
-                    player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr))
+                    player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr, "HookShoot"))
                 );
                 meatHook->setSpawnFunction(CreateHook);
                 player->GetComponent<ArsenalManager>()->AddWeapon(meatHook, SDLK_2);
@@ -514,7 +671,7 @@ void Game::objectInit() {
         };
 
         auto CreateBootUpgrade = [player](Vector2 position){
-            GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(rand() + rand()));
+            GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(spawnID++));
             bootUpgrade->layer = CollisionMatrix::POWERUP;
 
             bootUpgrade->transform.position = position;
@@ -546,7 +703,7 @@ void Game::objectInit() {
         };
 
         auto CreateShield = [player](Vector2 position){
-            GameObject *shield = new GameObject("Shield" + std::to_string(rand() + rand()));
+            GameObject *shield = new GameObject("Shield" + std::to_string(spawnID++));
             shield->layer = CollisionMatrix::POWERUP;
 
             shield->transform.position = position;
@@ -578,7 +735,7 @@ void Game::objectInit() {
         };
 
         auto CreatePowerUpBox = [](Vector2 position, std::function<GameObject *(Vector2 position)> powerUpFunction){
-            GameObject *powerUpBox = new GameObject("PowerUpBox" + std::to_string(rand() + rand()));
+            GameObject *powerUpBox = new GameObject("PowerUpBox" + std::to_string(spawnID++));
             powerUpBox->layer = CollisionMatrix::WALL;
 
             powerUpBox->transform.position = position;
@@ -602,8 +759,8 @@ void Game::objectInit() {
                         powerup->GetComponent<Rigidbody2D>()->AddForce(POWER_UP_POP_UP_FORCE * Vector2(0, -1));
 
                         GameObjectManager::GetInstance()->AddGameObject(powerup);
-                        GameObjectManager::GetInstance()->RemoveGameObject(powerUpBox->GetName());
                     }
+                    GameObjectManager::GetInstance()->RemoveGameObject(powerUpBox->GetName());
                 }
             });
             
@@ -620,7 +777,7 @@ void Game::objectInit() {
         };
 
         auto CreateCoin = [player](Vector2 position){
-            GameObject *coin = new GameObject("Coin" + std::to_string(rand() + rand()));
+            GameObject *coin = new GameObject("Coin" + std::to_string(spawnID++));
             coin->layer = CollisionMatrix::POWERUP;
 
             coin->transform.position = position;
@@ -675,42 +832,38 @@ void Game::objectInit() {
 
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
         ));
 
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8), CreateHookUpgrade
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHookUpgrade
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8), CreateHookUpgrade
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHookUpgrade
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateBootUpgrade
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateBootUpgrade
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
+        ));
+        
+        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
             tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateShield
         ));
-
-        // GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(46, 4)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateHookUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateBootUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 4)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateShield(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(59, 4)));
-
 #pragma endregion
 
 #pragma region Physic Box
         auto CreateBox = [](float mass, Vector2 scale, Vector2 position){
-            GameObject *box = new GameObject("Box" + std::to_string(rand() + rand()));
+            GameObject *box = new GameObject("Box" + std::to_string(spawnID++));
             box->layer = CollisionMatrix::WALL;
             box->transform.position = position;
             box->transform.scale = scale;
@@ -732,7 +885,7 @@ void Game::objectInit() {
     
 #pragma region Gate
         auto CreateGate = [](Vector2 position, Vector2 destination){
-            GameObject *gate = new GameObject("Gate" + std::to_string(rand() + rand()));
+            GameObject *gate = new GameObject("Gate" + std::to_string(spawnID++));
             gate->layer = CollisionMatrix::GATE;
             gate->transform.position = position;
             gate->transform.scale = Vector2(4, 4);
@@ -767,7 +920,7 @@ void Game::objectInit() {
 #pragma region Melee projectile setup
 
     auto CreateMeleeProjectile = [](Vector2 direction, float lifeTime, Vector2 position) {
-        GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(rand() + rand()));
+        GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(spawnID++));
         meleeProjectile->layer = CollisionMatrix::E_PROJECTILE;
         meleeProjectile->transform.scale = Vector2(3, 3);
         meleeProjectile->transform.position = position;
@@ -817,7 +970,7 @@ void Game::objectInit() {
 
 #pragma region Melee setup
         auto CreateMelee = [player, CreateMeleeProjectile, enemyHurtParticle, CreateCoin, CreateHeal](Vector2 position){
-            GameObject *melee = new GameObject("Melee" + std::to_string(rand() + rand()));
+            GameObject *melee = new GameObject("Melee" + std::to_string(spawnID++));
             melee->layer = CollisionMatrix::ENEMY;
             melee->transform.position = position;
             melee->transform.scale = Vector2(2, 2);
@@ -895,7 +1048,7 @@ void Game::objectInit() {
 #pragma region Ranged projectile setup
 
     auto CreateRangedProjectile = [shellParticle](Vector2 direction, float speed, float lifeTime, Vector2 position){
-        GameObject *rangedProjectile = new GameObject("RangedProjectile" + std::to_string(rand() + rand()));
+        GameObject *rangedProjectile = new GameObject("RangedProjectile" + std::to_string(spawnID++));
         rangedProjectile->layer = CollisionMatrix::E_PROJECTILE;
         rangedProjectile->transform.scale = Vector2(4, 4);
         rangedProjectile->transform.position = position;
@@ -927,7 +1080,7 @@ void Game::objectInit() {
 
 #pragma region Ranged setup
         auto CreateRanged = [player, CreateRangedProjectile, enemyHurtParticle, CreateCoin, CreateHeal](Vector2 position){
-            GameObject *ranged = new GameObject("Ranged");
+            GameObject *ranged = new GameObject("Ranged" + std::to_string(spawnID++));
             ranged->layer = CollisionMatrix::ENEMY;
             ranged->transform.position = position;
             ranged->transform.scale = Vector2(2, 2);
@@ -986,7 +1139,7 @@ void Game::objectInit() {
 
 #pragma region Moai projectile
         auto CreateMoaiProjectile = [shellParticle](Vector2 direction, float speed, float lifeTime, Vector2 position){
-            GameObject *moaiProjectile = new GameObject("MoaiProjectile" + std::to_string(rand() + rand()));
+            GameObject *moaiProjectile = new GameObject("MoaiProjectile" + std::to_string(spawnID++));
             moaiProjectile->layer = CollisionMatrix::E_PROJECTILE;
             moaiProjectile->transform.scale = Vector2(4, 4);
             moaiProjectile->transform.position = position;
@@ -1024,7 +1177,7 @@ void Game::objectInit() {
 
 #pragma region Moai setup
         auto CreateMoai = [player, CreateMelee, CreateRanged, CreateMoaiProjectile, enemyHurtParticle](Vector2 position){
-            GameObject *moai = new GameObject("Moai" + std::to_string(rand() + rand()));
+            GameObject *moai = new GameObject("Moai" + std::to_string(spawnID++));
             moai->layer = CollisionMatrix::ENEMY;
             moai->transform.position = position;
             moai->transform.scale = Vector2(2, 2);
@@ -1087,10 +1240,96 @@ void Game::objectInit() {
         
 #pragma endregion
 
-    });
+#pragma region UI
+        GameObject *coinUI = new GameObject("CoinUI");
+        coinUI->transform.position = Vector2(0, 0);
+        coinUI->transform.scale = Vector2(2, 2);
 
+        //Dummy sprite
+        coinUI->AddComponent(new SpriteRenderer(coinUI, Vector2(100, 20), 20, nullptr));
+        coinUI->AddComponent(new TextRenderer(coinUI, "Coins: 0", SDL_Color{255, 255, 255, 255}, 20, "Assets/Fonts/arial.ttf"));
+
+        player->GetComponent<CoinCollector>()->OnCoinCollect.addHandler([coinUI, player](){
+            int coinCount = player->GetComponent<CoinCollector>()->GetCoinCount();
+            coinUI->GetComponent<TextRenderer>()->SetText("Coins: " + std::to_string(coinCount));
+            Game::coin = coinCount;
+        });
+
+        coinUI->AddComponent(new BindToCamera(coinUI, Vector2(WIDTH / 2 - 300, - HEIGHT / 2 + 20)));
+
+        GameObjectManager::GetInstance()->AddGameObject(coinUI);
+
+        GameObject *HPBar = new GameObject("HPBar");
+        HPBar->transform.position = Vector2(0, 0);
+        HPBar->transform.scale = Vector2(2, 2);
+
+        HPBar->AddComponent(new SpriteRenderer(HPBar, Vector2(100, 10), 20, LoadSpriteSheet("Assets/Sprites/Menu/HPBar.png")));
+
+        HPBar->AddComponent(new Animator(HPBar,
+        {
+            AnimationClip("3", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 0, 0),
+            AnimationClip("2", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 1, 1),
+            AnimationClip("1", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 2, 2),
+            AnimationClip("0", "Assets/Sprites/Menu/HPBar.png", Vector2(57, 18), 1000, true, 1.0, 3, 3),
+        }));
+        HPBar->GetComponent<Animator>()->Play("3");
+
+        player->GetComponent<HPController>()->OnHPChange.addHandler([HPBar, player](){
+            int hp = player->GetComponent<HPController>()->GetCurrentHP();
+            HPBar->GetComponent<Animator>()->Play(std::to_string(hp));
+        });
+
+        HPBar->AddComponent(new BindToCamera(HPBar, Vector2(- WIDTH / 2 + 70, - HEIGHT / 2 + 20)));
+
+        GameObjectManager::GetInstance()->AddGameObject(HPBar);
+
+#pragma endregion
+
+    });
     SceneManager::GetInstance()->AddScene(gameScene);
-    SceneManager::GetInstance()->LoadScene("Game");
+#endif
+
+    // Game Over Scene
+    Scene *gameOverScene = new Scene("GameOver");
+    gameOverScene->AssignLogic([gameOverScene, this]() {
+        Game::state = GAMEOVER;
+
+        SoundManager::GetInstance()->PlaySound("GameOver");
+
+        GameObject *gameOver = new GameObject("GameOver");
+        gameOver->transform.position = Vector2(640, 200);
+        
+        gameOver->AddComponent(new TextRenderer(gameOver, "Game Over", SDL_Color{255, 255, 255, 255}, 60, "Assets/Fonts/arial.ttf"));
+
+        GameObjectManager::GetInstance()->AddGameObject(gameOver);
+
+        GameObject *score = new GameObject("Score");
+        score->transform.position = Vector2(640, 300);
+
+        score->AddComponent(new TextRenderer(score, "Coin: " + Game::coin, SDL_Color{255, 255, 255, 255}, 40, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(score);
+
+        GameObject *quitButton = new GameObject("QuitButton");
+        quitButton->transform.scale = Vector2(2, 2);
+
+        quitButton->transform.position = Vector2(1280 - 32 * 2 / 2, 32 * 2 / 2);
+
+        quitButton->AddComponent(new SpriteRenderer(quitButton, Vector2(32, 32), 0, LoadSpriteSheet("Assets/Sprites/Menu/Quit_button.png")));
+
+        quitButton->AddComponent(new BoxCollider2D(quitButton, Vector2(0, 0), 
+            Vector2(32 * quitButton->transform.scale.x, 32 * quitButton->transform.scale.y)
+        ,true));
+
+        quitButton->AddComponent(new Button(quitButton));
+        quitButton->GetComponent<Button>()->AddOnClickHandler([this](){
+            Game::state = MENU;
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(quitButton);
+    });
+    SceneManager::GetInstance()->AddScene(gameOverScene);
+
+    SceneManager::GetInstance()->LoadScene("Menu");
 }
 
 void Game::handleEvents() {
@@ -1102,36 +1341,41 @@ void Game::handleEvents() {
         return;
     }
 
-    // if (event.type == SDL_KEYDOWN) {
-    //     if (event.key.keysym.sym == SDLK_ESCAPE) {
-    //         state = MENU;
-    //         scoreTeam1 = scoreTeam2 = 0;
-    //         return;
-    //     }
-    // }
-
-    // //End condition
-    // if (scoreTeam1 + scoreTeam2 >= 5) {
-    //     state = GAMEOVER;
-    //     return;
-    // }
+    if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+            state = MENU;
+            return;
+        }
+    }
 }
 
 void Game::handleSceneChange() {
-    // switch (state) {
-    // case MENU:
-    //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "MainMenu")
-    //         SceneManager::GetInstance()->LoadScene("MainMenu");
-    //     break;
-    // case GAME:
-    //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")
-    //         SceneManager::GetInstance()->LoadScene("Game");
-    //     break;
-    // case GAMEOVER:
-    //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver")
-    //         SceneManager::GetInstance()->LoadScene("GameOver");
-    //     break;
-    // }
+    switch (state) {
+    case MENU:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Menu"){
+            Game::CAMERA = nullptr;
+            SceneManager::GetInstance()->LoadScene("Menu");
+        }
+        break;
+    case OPTION:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Option"){
+            Game::CAMERA = nullptr;
+            SceneManager::GetInstance()->LoadScene("Option");
+        }
+        break;
+    case GAME:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game"){
+            Game::coin = 0;
+            SceneManager::GetInstance()->LoadScene("Game");
+        }
+        break;
+    case GAMEOVER:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver"){
+            Game::CAMERA = nullptr;
+            SceneManager::GetInstance()->LoadScene("GameOver");
+        }
+        break;
+    }
 }
 
 void Game::update() {
