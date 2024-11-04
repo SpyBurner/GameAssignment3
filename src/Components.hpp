@@ -311,4 +311,25 @@ public:
     Component *Clone(GameObject *parent);
 };
 
+class Button : public Component {
+private:
+    Collider2D *collider = nullptr;
+
+    Event<> *onClick = nullptr;
+
+public:
+    Button(GameObject *parent);
+    ~Button();
+
+    void Update();
+
+    void Draw();
+
+    void AddOnClickHandler(std::function<void()> handler);
+
+    Component *Clone(GameObject *parent);
+};
+
+
+
 #endif

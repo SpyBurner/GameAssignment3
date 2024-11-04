@@ -797,3 +797,39 @@ Component *PowerUpBox::Clone(GameObject *parent) {
     PowerUpBox *newPowerUpBox = new PowerUpBox(parent, powerUpFunction);
     return newPowerUpBox;
 }
+
+
+Button::Button(GameObject *parent) : Component(parent) {
+    onClick = new Event<>();
+}
+
+Button::~Button() {
+    delete onClick;
+}
+
+void Button::Update() {
+    if (collider == nullptr) {
+        collider = gameObject->GetComponent<Collider2D>();
+        if (collider == nullptr)
+            return;
+    }
+
+    if (Game::event.type == SDL_MOUSEBUTTONDOWN) {
+        Vector2 mousePosition = Vector2(Game::event.button.x, Game::event.button.y);
+        if (collider->CheckCollision(mousePosition)) {
+            this->onClick->raise();
+        }
+    }
+}
+
+void Button::Draw() {}
+
+void Button::AddOnClickHandler(std::function<void()> handler) {
+    onClick->addHandler(handler);
+}
+
+Component *Button::Clone(GameObject *parent) {
+    Button *newButton = new Button(parent);
+    newButton->onClick = onClick;
+    return newButton;
+}

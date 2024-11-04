@@ -11,6 +11,7 @@ public:
 
     enum State{
         MENU,
+        OPTION,
         GAME,
         GAMEOVER
     };

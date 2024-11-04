@@ -131,6 +131,74 @@ void Game::objectInit() {
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::GATE, CollisionMatrix::WALL, true);
 #pragma endregion
 
+    Scene *menuScene = new Scene("Menu");
+
+    menuScene->AssignLogic([menuScene, this](){
+        Game::state = MENU;
+        GameObject *title = new GameObject("Title");
+        title->transform.position = Vector2(640, 200);
+        title->transform.scale = Vector2(3, 3);
+
+        title->AddComponent(new SpriteRenderer(title, Vector2(128, 128), 10, LoadSpriteSheet("Assets/Sprites/Menu/alien_evil_name.png")));
+        
+        GameObjectManager::GetInstance()->AddGameObject(title);
+
+#pragma region button
+        GameObject *newGameButton = new GameObject("NewGameButton");
+        newGameButton->transform.position = Vector2(640, 400);
+        newGameButton->transform.scale = Vector2(4, 4);
+
+        newGameButton->AddComponent(new SpriteRenderer(newGameButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/NewGameButton.png")));
+
+        newGameButton->AddComponent(new BoxCollider2D(newGameButton, Vector2(0, 0), 
+            Vector2(32 * newGameButton->transform.scale.x, 16 * newGameButton->transform.scale.y), 
+        true));
+        
+        newGameButton->AddComponent(new Button(newGameButton));
+
+        newGameButton->GetComponent<Button>()->AddOnClickHandler([menuScene, this]() {
+            Game::state = GAME;
+        });
+        GameObjectManager::GetInstance()->AddGameObject(newGameButton);
+
+        GameObject *optionButton = new GameObject("OptionButton");
+        optionButton->transform.position = Vector2(640, 500);
+        optionButton->transform.scale = Vector2(4, 4);
+
+        optionButton->AddComponent(new SpriteRenderer(optionButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/OptionButton.png")));
+
+        optionButton->AddComponent(new BoxCollider2D(optionButton, Vector2(0, 0), 
+            Vector2(32 * optionButton->transform.scale.x, 16 * optionButton->transform.scale.y),
+        true));
+
+        optionButton->AddComponent(new Button(optionButton));
+
+        optionButton->GetComponent<Button>()->AddOnClickHandler([menuScene, this]() {
+            Game::state = OPTION;
+        });
+        GameObjectManager::GetInstance()->AddGameObject(optionButton);
+
+        GameObject *exitButton = new GameObject("ExitButton");
+        exitButton->transform.position = Vector2(640, 600);
+        exitButton->transform.scale = Vector2(4, 4);
+
+        exitButton->AddComponent(new SpriteRenderer(exitButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/ExitButton.png")));
+
+        exitButton->AddComponent(new BoxCollider2D(exitButton, Vector2(0, 0), 
+            Vector2(32 * exitButton->transform.scale.x, 16 * exitButton->transform.scale.y),
+        true));
+
+        exitButton->AddComponent(new Button(exitButton));
+        exitButton->GetComponent<Button>()->AddOnClickHandler([menuScene, this]() {
+            isRunning = false;
+        });
+        GameObjectManager::GetInstance()->AddGameObject(exitButton);
+
+#pragma endregion
+
+    });
+    SceneManager::GetInstance()->AddScene(menuScene);
+
     Scene *gameScene = new Scene("Game");
     gameScene->AssignLogic([gameScene, this]() {
         Game::state = GAME;
@@ -230,7 +298,7 @@ void Game::objectInit() {
         }));
 
         auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
-            GameObject *shell = new GameObject("Shell" + std::to_string(rand() + rand()));
+            GameObject *shell = new GameObject("Shell" + std::to_string(SDL_GetTicks()));
             shell->transform.scale = Vector2(2, 2);
             shell->layer = CollisionMatrix::PROJECTILE;
             shell->transform.position = position;
@@ -283,7 +351,7 @@ void Game::objectInit() {
         hookParticle->AddComponent(new CircleCollider2D(hookParticle, Vector2(0, 0), 3, true));
 
         auto CreateHook = [hookParticle](float speed, Vector2 direction, float lifeTime, Vector2 position){
-            GameObject *hook = new GameObject("hook" + std::to_string(rand() + rand()));
+            GameObject *hook = new GameObject("hook" + std::to_string(SDL_GetTicks()));
             hook->transform.scale = Vector2(2, 2);
             hook->layer = CollisionMatrix::PROJECTILE;
             hook->transform.position = position;
@@ -332,7 +400,7 @@ void Game::objectInit() {
         player->layer = CollisionMatrix::PLAYER;
         //tile 9 3 for start
         //tile 88 13 for boss room
-        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13);
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(9, 3);
         // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
@@ -408,6 +476,10 @@ void Game::objectInit() {
             std::cout << "Player HP: " << player->GetComponent<HPController>()->GetCurrentHP() << std::endl;
         });
 
+        player->GetComponent<HPController>()->OnDeath.addHandler([this]() {
+            Game::state = GAMEOVER;
+        });
+
         player->AddComponent(new CoinCollector(player));
 
 #pragma endregion
@@ -445,7 +517,7 @@ void Game::objectInit() {
 
 #pragma region Powerup
         auto CreateHeal = [player](Vector2 position){
-            GameObject *heal = new GameObject("Heal" + std::to_string(rand() + rand()));
+            GameObject *heal = new GameObject("Heal" + std::to_string(SDL_GetTicks()));
             heal->layer = CollisionMatrix::POWERUP;
 
             heal->transform.position = position;
@@ -478,7 +550,7 @@ void Game::objectInit() {
         };
 
         auto CreateHookUpgrade = [player, aimStick, CreateHook](Vector2 position){
-            GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(rand() + rand()));
+            GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(SDL_GetTicks()));
             hookUpgrade->layer = CollisionMatrix::POWERUP;
 
             hookUpgrade->transform.position = position;
@@ -514,7 +586,7 @@ void Game::objectInit() {
         };
 
         auto CreateBootUpgrade = [player](Vector2 position){
-            GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(rand() + rand()));
+            GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(SDL_GetTicks()));
             bootUpgrade->layer = CollisionMatrix::POWERUP;
 
             bootUpgrade->transform.position = position;
@@ -546,7 +618,7 @@ void Game::objectInit() {
         };
 
         auto CreateShield = [player](Vector2 position){
-            GameObject *shield = new GameObject("Shield" + std::to_string(rand() + rand()));
+            GameObject *shield = new GameObject("Shield" + std::to_string(SDL_GetTicks()));
             shield->layer = CollisionMatrix::POWERUP;
 
             shield->transform.position = position;
@@ -578,7 +650,7 @@ void Game::objectInit() {
         };
 
         auto CreatePowerUpBox = [](Vector2 position, std::function<GameObject *(Vector2 position)> powerUpFunction){
-            GameObject *powerUpBox = new GameObject("PowerUpBox" + std::to_string(rand() + rand()));
+            GameObject *powerUpBox = new GameObject("PowerUpBox" + std::to_string(SDL_GetTicks()));
             powerUpBox->layer = CollisionMatrix::WALL;
 
             powerUpBox->transform.position = position;
@@ -620,7 +692,7 @@ void Game::objectInit() {
         };
 
         auto CreateCoin = [player](Vector2 position){
-            GameObject *coin = new GameObject("Coin" + std::to_string(rand() + rand()));
+            GameObject *coin = new GameObject("Coin" + std::to_string(SDL_GetTicks()));
             coin->layer = CollisionMatrix::POWERUP;
 
             coin->transform.position = position;
@@ -675,42 +747,35 @@ void Game::objectInit() {
 
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
         ));
 
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8), CreateHookUpgrade
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHookUpgrade
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8), CreateHookUpgrade
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHookUpgrade
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateBootUpgrade
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
+            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateBootUpgrade
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateShield
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
         ));
-
-        // GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(46, 4)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateHookUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateBootUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 4)));
-        // GameObjectManager::GetInstance()->AddGameObject(CreateShield(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(59, 4)));
-
+        
 #pragma endregion
 
 #pragma region Physic Box
         auto CreateBox = [](float mass, Vector2 scale, Vector2 position){
-            GameObject *box = new GameObject("Box" + std::to_string(rand() + rand()));
+            GameObject *box = new GameObject("Box" + std::to_string(SDL_GetTicks()));
             box->layer = CollisionMatrix::WALL;
             box->transform.position = position;
             box->transform.scale = scale;
@@ -732,7 +797,7 @@ void Game::objectInit() {
     
 #pragma region Gate
         auto CreateGate = [](Vector2 position, Vector2 destination){
-            GameObject *gate = new GameObject("Gate" + std::to_string(rand() + rand()));
+            GameObject *gate = new GameObject("Gate" + std::to_string(SDL_GetTicks()));
             gate->layer = CollisionMatrix::GATE;
             gate->transform.position = position;
             gate->transform.scale = Vector2(4, 4);
@@ -767,7 +832,7 @@ void Game::objectInit() {
 #pragma region Melee projectile setup
 
     auto CreateMeleeProjectile = [](Vector2 direction, float lifeTime, Vector2 position) {
-        GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(rand() + rand()));
+        GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(SDL_GetTicks()));
         meleeProjectile->layer = CollisionMatrix::E_PROJECTILE;
         meleeProjectile->transform.scale = Vector2(3, 3);
         meleeProjectile->transform.position = position;
@@ -817,7 +882,7 @@ void Game::objectInit() {
 
 #pragma region Melee setup
         auto CreateMelee = [player, CreateMeleeProjectile, enemyHurtParticle, CreateCoin, CreateHeal](Vector2 position){
-            GameObject *melee = new GameObject("Melee" + std::to_string(rand() + rand()));
+            GameObject *melee = new GameObject("Melee" + std::to_string(SDL_GetTicks()));
             melee->layer = CollisionMatrix::ENEMY;
             melee->transform.position = position;
             melee->transform.scale = Vector2(2, 2);
@@ -895,7 +960,7 @@ void Game::objectInit() {
 #pragma region Ranged projectile setup
 
     auto CreateRangedProjectile = [shellParticle](Vector2 direction, float speed, float lifeTime, Vector2 position){
-        GameObject *rangedProjectile = new GameObject("RangedProjectile" + std::to_string(rand() + rand()));
+        GameObject *rangedProjectile = new GameObject("RangedProjectile" + std::to_string(SDL_GetTicks()));
         rangedProjectile->layer = CollisionMatrix::E_PROJECTILE;
         rangedProjectile->transform.scale = Vector2(4, 4);
         rangedProjectile->transform.position = position;
@@ -986,7 +1051,7 @@ void Game::objectInit() {
 
 #pragma region Moai projectile
         auto CreateMoaiProjectile = [shellParticle](Vector2 direction, float speed, float lifeTime, Vector2 position){
-            GameObject *moaiProjectile = new GameObject("MoaiProjectile" + std::to_string(rand() + rand()));
+            GameObject *moaiProjectile = new GameObject("MoaiProjectile" + std::to_string(SDL_GetTicks()));
             moaiProjectile->layer = CollisionMatrix::E_PROJECTILE;
             moaiProjectile->transform.scale = Vector2(4, 4);
             moaiProjectile->transform.position = position;
@@ -1024,7 +1089,7 @@ void Game::objectInit() {
 
 #pragma region Moai setup
         auto CreateMoai = [player, CreateMelee, CreateRanged, CreateMoaiProjectile, enemyHurtParticle](Vector2 position){
-            GameObject *moai = new GameObject("Moai" + std::to_string(rand() + rand()));
+            GameObject *moai = new GameObject("Moai" + std::to_string(SDL_GetTicks()));
             moai->layer = CollisionMatrix::ENEMY;
             moai->transform.position = position;
             moai->transform.scale = Vector2(2, 2);
@@ -1089,8 +1154,10 @@ void Game::objectInit() {
 
     });
 
+
     SceneManager::GetInstance()->AddScene(gameScene);
-    SceneManager::GetInstance()->LoadScene("Game");
+
+    SceneManager::GetInstance()->LoadScene("Menu");
 }
 
 void Game::handleEvents() {
@@ -1118,20 +1185,20 @@ void Game::handleEvents() {
 }
 
 void Game::handleSceneChange() {
-    // switch (state) {
-    // case MENU:
-    //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "MainMenu")
-    //         SceneManager::GetInstance()->LoadScene("MainMenu");
-    //     break;
-    // case GAME:
-    //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")
-    //         SceneManager::GetInstance()->LoadScene("Game");
-    //     break;
-    // case GAMEOVER:
-    //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver")
-    //         SceneManager::GetInstance()->LoadScene("GameOver");
-    //     break;
-    // }
+    switch (state) {
+    case MENU:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "MainMenu")
+            SceneManager::GetInstance()->LoadScene("MainMenu");
+        break;
+    case GAME:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")
+            SceneManager::GetInstance()->LoadScene("Game");
+        break;
+    case GAMEOVER:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver")
+            SceneManager::GetInstance()->LoadScene("GameOver");
+        break;
+    }
 }
 
 void Game::update() {
