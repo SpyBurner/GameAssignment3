@@ -17,7 +17,9 @@ public:
 
     void Update();
     void Draw();
+
     void AddForce(Vector2 force);
+    void RemoveAllForce();
 
     void SetDrag(float drag);
     void SetBounciness(float bounciness);

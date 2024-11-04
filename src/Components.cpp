@@ -332,7 +332,7 @@ call setSpawnFunction to set the function that will create the shell
 */
 
 PlayerShoot::PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown,
-                         float shootAmount, float shootAngle, Joystick *joystick) : Component(parent) {
+                         float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem) : Component(parent) {
     this->shellSpeed = shellSpeed;
     this->shellLifetime = shellLifeTime;
 
@@ -340,7 +340,7 @@ PlayerShoot::PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTi
     this->shootAmount = shootAmount;
     this->shootAngle = shootAngle;
 
-    particleSystem = gameObject->GetComponent<ParticleSystem>();
+    particleSystem = particleSystem;
     this->joystick = joystick;
 }
 
@@ -373,7 +373,9 @@ void PlayerShoot::Update() {
         for (int i = 0; i < shootAmount; i++) {
 
             // Rotate direction
-            Vector2 direction = Vector2::Rotate(lastDirection, (rand() % (int)shootAngle * 2 - (int)shootAngle));
+            Vector2 direction = lastDirection;
+            if (shootAngle != 0)
+                Vector2::Rotate(direction, (rand() % (int)shootAngle * 2 - (int)shootAngle));
 
             GameObject *shell = createShell(shellSpeed, direction, shellLifetime, gameObject->transform.position);
             shell->GetComponent<ShellBehavior>()->SetSender(gameObject);
@@ -391,7 +393,7 @@ void PlayerShoot::Update() {
 void PlayerShoot::Draw() {}
 
 Component *PlayerShoot::Clone(GameObject *parent) {
-    PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick);
+    PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick, particleSystem);
     return newPlayerShoot;
 }
 
@@ -603,6 +605,17 @@ int HPController::GetMaxHP() {
     return maxHP;
 }
 
+void HPController::Stun(float time){
+    if (isDead)
+        return;
+    lastStunTime = SDL_GetTicks();
+    stunTime = time;
+}
+
+bool HPController::IsStunned(){
+    return SDL_GetTicks() - lastStunTime < stunTime;
+}
+
 bool HPController::IsDead() {
     return isDead;
 }
@@ -647,4 +660,37 @@ void DamageOnCollision::Draw() {}
 Component *DamageOnCollision::Clone(GameObject *parent) {
     // Clone implementation
     return new DamageOnCollision(parent, damage, targetLayer, destroyOnCollision);
+}
+
+PowerUp::PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObject *)> powerUpFunction, int healAmount) : Component(parent) {
+    this->targetLayer = targetLayer;
+    this->powerUpFunction = powerUpFunction;
+    this->healAmount = healAmount;
+    this->hpController = gameObject->GetComponent<HPController>();
+
+    Collider2D *collider = gameObject->GetComponent<Collider2D>();
+    if (collider) {
+        collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+            if (collider->layer == this->targetLayer) {
+                if (this->powerUpFunction) {
+                    this->powerUpFunction(collider->gameObject);
+                }
+                if (hpController) {
+                    hpController->Heal(this->healAmount);
+                }
+                GameObject::Destroy(gameObject->GetName());
+            }
+        });
+    } else {
+        std::cout << "PowerUp: No collider found" << std::endl;
+    }
+}
+
+void PowerUp::Update() {}
+
+void PowerUp::Draw() {}
+
+Component *PowerUp::Clone(GameObject *parent) {
+    PowerUp *newPlayerPowerUp = new PowerUp(parent, targetLayer, powerUpFunction, healAmount);
+    return newPlayerPowerUp;
 }

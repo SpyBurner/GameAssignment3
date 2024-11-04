@@ -145,7 +145,7 @@ private:
 
     float lastHandOff = 0;
 public:
-    PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick);
+    PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem);
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell);
     void Update();
     void Draw();
@@ -211,6 +211,9 @@ private:
     float invincibleTime = 0;
     float lastDamageTime = 0;
 
+    float stunTime = 0;
+    float lastStunTime = 0;
+
     ParticleSystem *particleSystem = nullptr;
 public:
     Event<> OnDeath = Event<>();
@@ -229,6 +232,9 @@ public:
     int GetCurrentHP();
     int GetMaxHP();
 
+    void Stun(float time);
+    bool IsStunned();
+
     bool IsDead();
 
     Component *Clone(GameObject *parent);
@@ -242,6 +248,21 @@ private:
 public:
     DamageOnCollision(GameObject *parent, int damage, int targetLayer, bool destroyOnCollision);
     void OnCollisionEnter(Collider2D *collider);
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
+};
+
+class PowerUp : public Component {
+private:
+    int targetLayer = CollisionMatrix::DEFAULT;
+
+    HPController *hpController = nullptr;
+    std::function<void(GameObject *)> powerUpFunction = nullptr;
+
+    int healAmount = 0;
+public: 
+    PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObject *)> powerUpFunction, int healAmout);
     void Update();
     void Draw();
     Component *Clone(GameObject *parent);

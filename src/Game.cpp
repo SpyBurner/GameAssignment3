@@ -100,11 +100,18 @@ void Game::objectInit() {
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::E_PROJECTILE, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::ENEMY, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::POWERUP, true);
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::DETECTION, CollisionMatrix::WALL, true);
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::SPIKE, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::SPIKE, CollisionMatrix::ENEMY, true);
+
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::PLAYER, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::WALL, true);
+
+
+
 #pragma endregion
 
     Scene *gameScene = new Scene("Game");
@@ -244,6 +251,57 @@ void Game::objectInit() {
             return shell;
         };
 
+        GameObject *hookParticle = new GameObject("hookParticle");
+        hookParticle->layer = CollisionMatrix::PARTICLE;
+        hookParticle->transform.scale = Vector2(2, 2);
+
+        hookParticle->AddComponent(new SpriteRenderer(hookParticle, Vector2(10, 10), 1, LoadSpriteSheet("Assets/Sprites/Player/hook_particle.png")));
+        hookParticle->AddComponent(new Rigidbody2D(hookParticle, 1, 0.025, 0, 0.0));
+        hookParticle->AddComponent(new CircleCollider2D(hookParticle, Vector2(0, 0), 3, true));
+
+        auto CreateHook = [hookParticle](float speed, Vector2 direction, float lifeTime, Vector2 position){
+            GameObject *hook = new GameObject("hook" + std::to_string(rand() + rand()));
+            hook->transform.scale = Vector2(2, 2);
+            hook->layer = CollisionMatrix::PROJECTILE;
+            hook->transform.position = position;
+
+            hook->AddComponent(new SpriteRenderer(hook, Vector2(16, 10), 10, LoadSpriteSheet("Assets/Sprites/Player/hook.png")));
+
+            hook->AddComponent(new ParticleSystem(hook, hookParticle, 20, 500, -1 * direction, 0, 0));
+
+            hook->AddComponent(new Rigidbody2D(hook, 1, 0.025, 0, 0.0));
+            hook->AddComponent(new ShellBehavior(hook, lifeTime, speed, direction));
+            hook->AddComponent(new RotateTowardVelocity(hook, Vector2(1, 0)));
+
+            hook->AddComponent(new CircleCollider2D(hook, Vector2(0, 0),
+                                                     5 * hook->transform.scale.x / 2, true));
+            hook->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([hook](Collider2D *collider) {
+                ShellBehavior *shellBehavior = hook->GetComponent<ShellBehavior>();
+                float distance = (shellBehavior->GetSender()->transform.position - hook->transform.position).Magnitude();
+                
+                HPController *hpController = collider->gameObject->GetComponent<HPController>();
+                if (hpController){
+                    if (hpController->IsStunned()){
+                        return;
+                    }
+                    hpController->Stun(1000);
+                }
+
+                Rigidbody2D *rb = collider->gameObject->GetComponent<Rigidbody2D>();
+                if (rb) {
+                    collider->gameObject->transform.position = hook->transform.position;
+                    Vector2 direction = hook->transform.position - collider->gameObject->transform.position;
+                    direction = Vector2(direction.x, direction.y - 2);
+                    rb->velocity = Vector2(0, 0);
+                    rb->AddForce(direction * PLAYER_HOOK_FORCE);
+                }
+
+                GameObjectManager::GetInstance()->RemoveGameObject(hook->GetName());
+            });
+
+            return hook;
+        };
+
 #pragma endregion
 
 #pragma region Player Setup
@@ -252,7 +310,7 @@ void Game::objectInit() {
         player->layer = CollisionMatrix::PLAYER;
         //tile 10 8 for start
         //tile 81 14 for boss room
-        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(81, 14);
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(10, 8);
         // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
@@ -281,14 +339,17 @@ void Game::objectInit() {
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0),
                                                Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y), false));
 
-        player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10));
-        player->GetComponent<ParticleSystem>()->Stop();
+        ParticleSystem *shellDropPS = dynamic_cast<ParticleSystem *>(
+            player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10))
+        );
+        shellDropPS->Stop();
 
         Joystick *aimStick = dynamic_cast<Joystick *>(
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT)));
 
-        player->AddComponent(new PlayerShoot(player, 40, 600, 1000, 5, 10, aimStick));
-        player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateShell);
+        // player->AddComponent(new PlayerShoot(player, 40, 600, 1000, 5, 10, aimStick, shellDropPS));
+        player->AddComponent(new PlayerShoot(player, 40, 600, 3000, 1, 0, aimStick, nullptr));
+        player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateHook);
 
         player->AddComponent(new JumpController(player, SDLK_SPACE, 14, 450, CollisionMatrix::WALL));
         player->GetComponent<JumpController>()->BindCollider(player->GetComponent<BoxCollider2D>());
@@ -400,7 +461,7 @@ void Game::objectInit() {
         auto CreateMelee = [player, CreateMeleeProjectile, enemyHurtParticle](Vector2 position){
             GameObject *melee = new GameObject("Melee");
             melee->layer = CollisionMatrix::ENEMY;
-            melee->transform.position = Vector2(450, 100);
+            melee->transform.position = position;
             melee->transform.scale = Vector2(2, 2);
 
             melee->AddComponent(new SpriteRenderer(melee, Vector2(0, 0), 5, nullptr));
@@ -452,6 +513,9 @@ void Game::objectInit() {
 
             return melee;
         };
+        GameObjectManager::GetInstance()->AddGameObject(CreateMelee(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(24, 8)
+        ));
 #pragma endregion
 
 #pragma region Ranged projectile setup
@@ -491,7 +555,7 @@ void Game::objectInit() {
         auto CreateRanged = [player, CreateRangedProjectile, enemyHurtParticle](Vector2 position){
             GameObject *ranged = new GameObject("Ranged");
             ranged->layer = CollisionMatrix::ENEMY;
-            ranged->transform.position = Vector2(700, 100);
+            ranged->transform.position = Vector2(2000, 100);
             ranged->transform.scale = Vector2(2, 2);
 
             ranged->AddComponent(new SpriteRenderer(ranged, Vector2(0, 0), 5, nullptr));
@@ -538,10 +602,45 @@ void Game::objectInit() {
 
             return ranged;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateRanged(Vector2(450, 100)));
 
 
 
+#pragma endregion
+    
+#pragma region Powerup
+        auto CreateHeal = [player](Vector2 position){
+            GameObject *heal = new GameObject("Heal" + std::to_string(rand() + rand()));
+            heal->layer = CollisionMatrix::POWERUP;
+
+            heal->transform.position = position;
+            heal->transform.scale = Vector2(2, 2);
+
+            heal->AddComponent(new SpriteRenderer(heal, Vector2(0, 0), 5));
+            heal->AddComponent(new Animator(heal,
+            {
+                AnimationClip("Idle", "Assets/Sprites/Powerup/heart.png", Vector2(19, 18), 1000, false, 1.0, 0, 0),
+            }));
+            heal->GetComponent<Animator>()->Play("Idle");
+
+            heal->AddComponent(new Rigidbody2D(heal, 1, 0.025, 0, 1.0));
+
+            // Trigger
+            heal->AddComponent(new BoxCollider2D(heal, Vector2(0, 0),
+                Vector2(19 * heal->transform.scale.x, 18 * heal->transform.scale.y), true));
+            
+            heal->AddComponent(new PowerUp(heal, CollisionMatrix::PLAYER, nullptr, 1));
+
+            // Physic
+            BoxCollider2D *physCol = dynamic_cast<BoxCollider2D *>(
+                heal->AddComponent(new BoxCollider2D(heal, Vector2(0, 0),
+                    Vector2(19 * heal->transform.scale.x, 18 * heal->transform.scale.y), false))
+            );
+
+            physCol->layer = CollisionMatrix::PROJECTILE;
+
+            return heal;
+        };
+        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(Vector2(600, 100)));
 #pragma endregion
     });
 

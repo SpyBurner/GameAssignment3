@@ -149,8 +149,10 @@ void Tilemap::BuildMap() {
             !haveCollision));
 
             // Add a DamageOnCollision component to the tile
-            if (haveDamage)
+            if (haveDamage){
                 tile->AddComponent(new DamageOnCollision(tile, TILE_DAMAGE, CollisionMatrix::PLAYER, 0));
+                tile->AddComponent(new DamageOnCollision(tile, TILE_DAMAGE, CollisionMatrix::ENEMY, 0));
+            }
 
             // Add the tile to the GameObjectManager
             GameObjectManager::GetInstance()->AddGameObject(tile);

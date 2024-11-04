@@ -1,5 +1,5 @@
 #include "AI.hpp"
-
+#include <math.h>
 #pragma region MeleeAI
 
 MeleeAI::MeleeAI(GameObject *parent, float speed, float attackRange, float attackCooldown) : Component(parent) {
@@ -56,7 +56,7 @@ void MeleeAI::SetTarget(GameObject *target) {
     this->target = target;
 
     target->GetComponent<HPController>()->OnDeath.addHandler([this]() {
-        this->SetTarget(nullptr);
+        this->target = nullptr;
     });
 }
 
@@ -69,7 +69,7 @@ void MeleeAI::Update() {
         }
     }
 
-    if (!enabled || !target || hp->IsDead())
+    if (!enabled || !target || hp->IsDead() || hp->IsStunned())
         return;
 
     if (rb == nullptr) {
@@ -97,6 +97,7 @@ void MeleeAI::Update() {
         // In range & in front & off cooldown
         if (target && distance.Magnitude() <= attackRange && Vector2::Dot(walkDirection, distance) > 0 && SDL_GetTicks() - lastAttackTime >= attackCooldown) {
             state = ATTACK;
+            rb->RemoveAllForce();
         } else
             Move();
     } else if (state == ATTACK) {
@@ -128,7 +129,11 @@ void MeleeAI::Move() {
         newSpeed = speed * 4;
     }
 
-    rb->velocity = Vector2(walkDirection.x * newSpeed, rb->velocity.y);
+    rb->AddForce(walkDirection * newSpeed);
+    if (fabs(rb->velocity.x) > newSpeed) {
+
+        rb->velocity = Vector2(newSpeed * walkDirection.x, rb->velocity.y);
+    }
 }
 
 void MeleeAI::Attack() {
@@ -185,7 +190,7 @@ void RangedAI::Update() {
         }
     }
 
-    if (!enabled || !target || hp->IsDead())
+    if (!enabled || !target || hp->IsDead() || hp->IsStunned())
         return;
 
     if (rb == nullptr) {

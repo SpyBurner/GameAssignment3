@@ -38,7 +38,6 @@ public:
     static void setCollisionMatrix(int a, int b, bool value);
 };
 
-
 // Event
 template <typename... Args>
 class Event {

@@ -41,8 +41,6 @@ private:
     BoxCollider2D *cliffDetectionColl = nullptr;
     void ResetDetection();
 
-
-
 public:
     MeleeAI(GameObject *parent, float speed, float attackRange, float attackCooldown);
     ~MeleeAI();

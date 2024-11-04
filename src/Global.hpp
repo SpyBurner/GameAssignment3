@@ -43,9 +43,11 @@ const int MELEE_DAMAGE = 1;
 const int RANGED_DAMAGE = 1;
 const int MOAI_DAMAGE = 1;
 
+const int PLAYER_HOOK_FORCE = 6;
+
 const int TILE_DAMAGE = 1;
 
-const float MELEE_ATTACK_COOLDOWN = 600;
+const float MELEE_ATTACK_COOLDOWN = 2000;
 const float RANGED_ATTACK_COOLDOWN = 2000;
 
 const float MELEE_ATTACK_RANGE = 100;
