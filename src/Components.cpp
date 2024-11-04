@@ -162,9 +162,6 @@ void MovementController::Update() {
 
     if (force.Magnitude() > VELOCITY_EPS) {
         rigidbody->AddForce(force);
-        if (fabs(rigidbody->velocity.x) > speed) {
-            rigidbody->velocity = Vector2( rigidbody->velocity.x / fabs(rigidbody->velocity.x) * speed , rigidbody->velocity.y);
-        }
     }
 }
 
@@ -743,4 +740,20 @@ void PowerUp::Draw() {}
 Component *PowerUp::Clone(GameObject *parent) {
     PowerUp *newPlayerPowerUp = new PowerUp(parent, targetLayer, powerUpFunction, healAmount);
     return newPlayerPowerUp;
+}
+PowerUpBox::PowerUpBox(GameObject *parent, std::function<GameObject *(Vector2 position)> powerUpFunction) : Component(parent) {
+    this->powerUpFunction = powerUpFunction;
+}
+
+GameObject *PowerUpBox::GetPowerUp(){
+    return powerUpFunction(gameObject->transform.position);
+}
+
+void PowerUpBox::Update() {}
+
+void PowerUpBox::Draw() {}
+
+Component *PowerUpBox::Clone(GameObject *parent) {
+    PowerUpBox *newPowerUpBox = new PowerUpBox(parent, powerUpFunction);
+    return newPowerUpBox;
 }

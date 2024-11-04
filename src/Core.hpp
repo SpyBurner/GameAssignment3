@@ -31,6 +31,7 @@ public:
         SPIKE = 9,
         POWERUP = 10,
         PUSHABLE = 11,
+        GATE = 12,
         DEFAULT = 0
     };
 

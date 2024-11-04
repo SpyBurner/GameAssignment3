@@ -23,10 +23,9 @@ const bool FULLSCREEN = true;
 #define EPS 0.0001f
 #define GRAVITY_ACCELERATION 9.8f  * 3 / FPS
 
-const int PLAYER_SPEED = 18;
+const int PLAYER_SPEED = 19;
 const int MELEE_SPEED = 2;
 const int RANGED_SPEED = 1;
-
 
 const int PLAYER_HP = 3;
 const int MELEE_HP = 12;
@@ -59,4 +58,6 @@ const float RANGED_DETECT_RANGE = 700;
 const float RANGED_ATTACK_RANGE = 400;
 
 const float BOX_MAX_SPEED = 10;
+
+const float POWER_UP_POP_UP_FORCE = 10;
 #endif // GLOBALS_HPP

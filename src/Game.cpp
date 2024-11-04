@@ -100,7 +100,6 @@ void Game::objectInit() {
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::E_PROJECTILE, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::ENEMY, true);
-    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::POWERUP, true);
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::DETECTION, CollisionMatrix::WALL, true);
 
@@ -109,6 +108,7 @@ void Game::objectInit() {
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::WALL, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::PROJECTILE, true);
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::ENEMY, true);
@@ -119,6 +119,9 @@ void Game::objectInit() {
 
     // CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::PARTICLE, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::DETECTION, true);
+
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::GATE, CollisionMatrix::PLAYER, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::GATE, CollisionMatrix::WALL, true);
 #pragma endregion
 
     Scene *gameScene = new Scene("Game");
@@ -680,8 +683,7 @@ void Game::objectInit() {
 
             return heal;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8)));
-        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(46, 4)));
+
 
         auto CreateHookUpgrade = [player, aimStick, CreateHook](Vector2 position){
             GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(rand() + rand()));
@@ -718,7 +720,6 @@ void Game::objectInit() {
 
             return hookUpgrade;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateHookUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8)));
 
         auto CreateBootUpgrade = [player](Vector2 position){
             GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(rand() + rand()));
@@ -751,7 +752,6 @@ void Game::objectInit() {
 
             return bootUpgrade;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateBootUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(11, 4)));
 
         auto CreateShield = [player](Vector2 position){
             GameObject *shield = new GameObject("Shield" + std::to_string(rand() + rand()));
@@ -784,7 +784,75 @@ void Game::objectInit() {
 
             return shield;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateShield(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(10, 4)));
+
+        auto CreatePowerUpBox = [](Vector2 position, std::function<GameObject *(Vector2 position)> powerUpFunction){
+            GameObject *powerUpBox = new GameObject("PowerUpBox" + std::to_string(rand() + rand()));
+            powerUpBox->layer = CollisionMatrix::WALL;
+
+            powerUpBox->transform.position = position;
+            powerUpBox->transform.scale = Vector2(2, 2);
+
+            powerUpBox->AddComponent(new SpriteRenderer(powerUpBox, Vector2(18, 18), 5, LoadSpriteSheet("Assets/Sprites/Powerup/PowerTile.png")));
+            powerUpBox->AddComponent(new Rigidbody2D(powerUpBox, 1, 0.025, 0, 1.0));
+
+            powerUpBox->AddComponent(new PowerUpBox(powerUpBox, powerUpFunction));
+
+            // Trigger
+            powerUpBox->AddComponent(new BoxCollider2D(powerUpBox, Vector2(0, 0),
+                Vector2(18 * powerUpBox->transform.scale.x, 18 * powerUpBox->transform.scale.y), true));
+            powerUpBox->GetComponent<BoxCollider2D>()->layer = CollisionMatrix::POWERUP;
+            
+            powerUpBox->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([powerUpBox](Collider2D *collider) {
+                if (collider->layer == CollisionMatrix::PROJECTILE){
+                    GameObject *powerup = powerUpBox->GetComponent<PowerUpBox>()->GetPowerUp();
+
+                    if (powerup){
+                        powerup->GetComponent<Rigidbody2D>()->AddForce(POWER_UP_POP_UP_FORCE * Vector2(0, -1));
+
+                        GameObjectManager::GetInstance()->AddGameObject(powerup);
+                        GameObjectManager::GetInstance()->RemoveGameObject(powerUpBox->GetName());
+                    }
+                }
+            });
+            
+
+            // Physic
+            BoxCollider2D *physCol = dynamic_cast<BoxCollider2D *>(
+                powerUpBox->AddComponent(new BoxCollider2D(powerUpBox, Vector2(0, 0),
+                    Vector2(18 * powerUpBox->transform.scale.x, 18 * powerUpBox->transform.scale.y), false))
+            );
+
+            physCol->layer = CollisionMatrix::PARTICLE;
+
+            return powerUpBox;
+        };
+
+        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
+        ));
+
+        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
+        ));
+
+
+        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8), CreateHookUpgrade
+        ));
+
+        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
+        ));
+
+        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
+        ));
+
+        // GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8)));
+        // GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(46, 4)));
+        // GameObjectManager::GetInstance()->AddGameObject(CreateHookUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8)));
+        // GameObjectManager::GetInstance()->AddGameObject(CreateBootUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 4)));
+        // GameObjectManager::GetInstance()->AddGameObject(CreateShield(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(59, 4)));
 
 #pragma endregion
 
@@ -806,10 +874,46 @@ void Game::objectInit() {
         };
 
         GameObjectManager::GetInstance()->AddGameObject(
-            CreateBox(25, Vector2(12, 12), tilemap->GetComponent<Tilemap>()->GetPositionFromTile(59, 4))
+            CreateBox(3, Vector2(12, 12), tilemap->GetComponent<Tilemap>()->GetPositionFromTile(59, 4))
         );
 #pragma endregion
     
+#pragma region Gate
+        auto CreateGate = [](Vector2 position, Vector2 destination){
+            GameObject *gate = new GameObject("Gate" + std::to_string(rand() + rand()));
+            gate->layer = CollisionMatrix::GATE;
+            gate->transform.position = position;
+            gate->transform.scale = Vector2(4, 4);
+
+            gate->AddComponent(new SpriteRenderer(gate, Vector2(32, 32), 5, LoadSpriteSheet("Assets/Sprites/Powerup/gate.png")));
+            gate->AddComponent(new Rigidbody2D(gate, 1, 0.025, 0, 1.0));
+
+            gate->AddComponent(new BoxCollider2D(gate, Vector2(0, 0),
+                Vector2(32 * gate->transform.scale.x / 2, 32 * gate->transform.scale.y), true));
+            gate->GetComponent<BoxCollider2D>()->layer = CollisionMatrix::GATE;
+
+            gate->GetComponent<BoxCollider2D>()->OnCollisionEnter.addHandler([destination](Collider2D *collider) {
+                if (collider->layer == CollisionMatrix::PLAYER){
+                    collider->gameObject->transform.position = destination;
+                }
+            });
+            
+            BoxCollider2D *physCol = dynamic_cast<BoxCollider2D *>(
+                gate->AddComponent(new BoxCollider2D(gate, Vector2(0, 0),
+                    Vector2(32 * gate->transform.scale.x / 2, 32 * gate->transform.scale.y), false))
+            );
+            physCol->layer = CollisionMatrix::PARTICLE;
+
+            return gate;
+        };
+
+        GameObjectManager::GetInstance()->AddGameObject(
+            CreateGate(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(74, 4), tilemap->GetComponent<Tilemap>()->GetPositionFromTile(87, 14))
+        );
+#pragma endregion
+
+
+
     });
 
     SceneManager::GetInstance()->AddScene(gameScene);

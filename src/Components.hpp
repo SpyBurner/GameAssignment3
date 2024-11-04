@@ -281,4 +281,17 @@ public:
     Component *Clone(GameObject *parent);
 };
 
+class PowerUpBox : public Component {
+private:
+    std::function<GameObject *(Vector2 position)> powerUpFunction = nullptr;
+public:
+    PowerUpBox(GameObject *parent, std::function<GameObject *(Vector2 position)> powerUpFunction);
+    
+    GameObject *GetPowerUp();
+
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
+};
+
 #endif
