@@ -266,3 +266,6 @@ void RangedAI::Attack() {
 }
 
 #pragma endregion
+#pragma region MoaiAI
+
+#pragma endregion
