@@ -43,7 +43,7 @@ const int MELEE_DAMAGE = 1;
 const int RANGED_DAMAGE = 1;
 const int MOAI_DAMAGE = 1;
 
-const int PLAYER_HOOK_FORCE = 6;
+const int PLAYER_HOOK_FORCE = 15;
 
 const int TILE_DAMAGE = 1;
 

@@ -196,8 +196,8 @@ void Game::objectInit() {
         dropShellParticle->AddComponent(new Rigidbody2D(dropShellParticle, 1, 0.025, 0, 1.0));
         dropShellParticle->AddComponent(new CircleCollider2D(dropShellParticle, Vector2(0, 0), 3, false));
         dropShellParticle->AddComponent(new Animator(dropShellParticle, {
-                                                                            AnimationClip("Default", "Assets/Sprites/Player/shell_particle.png", Vector2(5, 5), 100, true, 1.0, 0, 3),
-                                                                        }));
+            AnimationClip("Default", "Assets/Sprites/Player/shell_particle.png", Vector2(5, 5), 100, true, 1.0, 0, 3),
+        }));
         dropShellParticle->AddComponent(new VelocityToAnimSpeedController(dropShellParticle, "Default", 1.0, false));
 
         GameObject *shellParticle = new GameObject("ShellParticle");
@@ -209,8 +209,8 @@ void Game::objectInit() {
         shellParticle->AddComponent(new CircleCollider2D(shellParticle, Vector2(0, 0), 3, true));
 
         shellParticle->AddComponent(new Animator(shellParticle, {
-                                                                    AnimationClip("Default", "Assets/Sprites/Player/shell_trail.png", Vector2(3, 3), 100, true, 1.0, 0, 1),
-                                                                }));
+            AnimationClip("Default", "Assets/Sprites/Player/shell_trail.png", Vector2(3, 3), 100, true, 1.0, 0, 1),
+        }));
 
         auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
             GameObject *shell = new GameObject("Shell" + std::to_string(rand() + rand()));
@@ -277,7 +277,6 @@ void Game::objectInit() {
                                                      5 * hook->transform.scale.x / 2, true));
             hook->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([hook](Collider2D *collider) {
                 ShellBehavior *shellBehavior = hook->GetComponent<ShellBehavior>();
-                float distance = (shellBehavior->GetSender()->transform.position - hook->transform.position).Magnitude();
                 
                 HPController *hpController = collider->gameObject->GetComponent<HPController>();
                 if (hpController){
@@ -289,9 +288,10 @@ void Game::objectInit() {
 
                 Rigidbody2D *rb = collider->gameObject->GetComponent<Rigidbody2D>();
                 if (rb) {
-                    collider->gameObject->transform.position = hook->transform.position;
-                    Vector2 direction = hook->transform.position - collider->gameObject->transform.position;
-                    direction = Vector2(direction.x, direction.y - 2);
+                    collider->gameObject->transform.position = collider->gameObject->transform.position + Vector2(0, -1);
+
+                    Vector2 direction = shellBehavior->GetSender()->transform.position - collider->gameObject->transform.position;
+                    direction = Vector2(direction.x, direction.y - 4).Normalize();
                     rb->velocity = Vector2(0, 0);
                     rb->AddForce(direction * PLAYER_HOOK_FORCE);
                 }
