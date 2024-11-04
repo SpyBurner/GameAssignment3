@@ -18,6 +18,7 @@ SoundManager *SoundManager::instance = nullptr;
 
 SDL_Renderer *RENDERER = nullptr;
 std::vector<SDL_Texture *> TEXTURES;
+int spawnID = 0;
 
 //
 

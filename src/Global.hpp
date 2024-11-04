@@ -10,6 +10,7 @@
 
 extern SDL_Renderer* RENDERER;
 extern std::vector<SDL_Texture *> TEXTURES;
+extern int spawnID;
 
 //SETTINGS
 const int FPS = 60;

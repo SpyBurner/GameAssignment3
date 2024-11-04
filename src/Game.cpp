@@ -12,7 +12,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <iostream>
 #include <math.h>
-
+#include <time.h>
 SDL_Event Game::event;
 GameObject *Game::CAMERA = nullptr;
 
@@ -79,6 +79,7 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
 GameObject *player = new GameObject("Player");
 
 void Game::objectInit() {
+    srand(time(NULL));
 
     // Add sounds and music
     //  SoundManager::GetInstance();
@@ -214,64 +215,6 @@ void Game::objectInit() {
         GameObjectManager::GetInstance()->AddGameObject(tilemap);
 #pragma endregion
 
-#pragma region Wall Setup
-        // GameObject *wall = new GameObject("Wall");
-        // wall->layer = CollisionMatrix::WALL;
-        // wall->transform.rotation = 0;
-        // wall->transform.position = Vector2(1000, 700);
-        // wall->transform.scale = Vector2(500, 2);
-        // wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(7500, 60), false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(wall);
-        // // Left Wall
-        // GameObject *leftWall = new GameObject("LeftWall");
-        // leftWall->layer = CollisionMatrix::WALL;
-        // leftWall->transform.rotation = 0;
-        // leftWall->transform.position = Vector2(-200, 400); // Adjust position as needed
-        // leftWall->transform.scale = Vector2(3, 100);       // Adjust scale as needed
-        // leftWall->AddComponent(new SpriteRenderer(leftWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // leftWall->AddComponent(new BoxCollider2D(leftWall, Vector2(0, 0), Vector2(45, 3000), false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(leftWall);
-
-        // // Right Wall
-        // GameObject *rightWall = new GameObject("RightWall");
-        // rightWall->layer = CollisionMatrix::WALL;
-        // rightWall->transform.rotation = 0;
-        // rightWall->transform.position = Vector2(2000, 400); // Adjust position as needed
-        // rightWall->transform.scale = Vector2(2, 100);       // Adjust scale as needed
-        // rightWall->AddComponent(new SpriteRenderer(rightWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // rightWall->AddComponent(new BoxCollider2D(rightWall, Vector2(0, 0), Vector2(30, 1500), false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(rightWall);
-
-        // // AI Test Walls
-        // GameObject *lowWall1 = new GameObject("LowWall1");
-        // lowWall1->layer = CollisionMatrix::WALL;
-        // lowWall1->transform.rotation = 0;
-        // lowWall1->transform.position = Vector2(50, 600); // Adjust position as needed
-        // lowWall1->transform.scale = Vector2(5, 5);       // Adjust scale as needed
-        // lowWall1->AddComponent(new SpriteRenderer(lowWall1, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // lowWall1->AddComponent(new BoxCollider2D(lowWall1, Vector2(0, 0),
-        //                                          Vector2(15 * lowWall1->transform.scale.x, 30 * lowWall1->transform.scale.y),
-        //                                          false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(lowWall1);
-
-        // GameObject *lowWall2 = new GameObject("LowWall2");
-        // lowWall2->layer = CollisionMatrix::WALL;
-        // lowWall2->transform.rotation = 0;
-        // lowWall2->transform.position = Vector2(1000, 600); // Adjust position as needed
-        // lowWall2->transform.scale = Vector2(100, 5);       // Adjust scale as needed
-        // lowWall2->AddComponent(new SpriteRenderer(lowWall2, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        // lowWall2->AddComponent(new BoxCollider2D(lowWall2, Vector2(0, 0),
-        //                                          Vector2(15 * lowWall2->transform.scale.x, 30 * lowWall2->transform.scale.y),
-        //                                          false));
-
-        // GameObjectManager::GetInstance()->AddGameObject(lowWall2);
-#pragma endregion
-
 #pragma region Shell Setup
         GameObject *dropShellParticle = new GameObject("DropShellParticle");
         dropShellParticle->layer = CollisionMatrix::PARTICLE;
@@ -298,7 +241,7 @@ void Game::objectInit() {
         }));
 
         auto CreateShell = [shellParticle](float speed, Vector2 direction, float lifeTime, Vector2 position) {
-            GameObject *shell = new GameObject("Shell" + std::to_string(SDL_GetTicks()));
+            GameObject *shell = new GameObject("Shell" + std::to_string(spawnID++));
             shell->transform.scale = Vector2(2, 2);
             shell->layer = CollisionMatrix::PROJECTILE;
             shell->transform.position = position;
@@ -351,7 +294,7 @@ void Game::objectInit() {
         hookParticle->AddComponent(new CircleCollider2D(hookParticle, Vector2(0, 0), 3, true));
 
         auto CreateHook = [hookParticle](float speed, Vector2 direction, float lifeTime, Vector2 position){
-            GameObject *hook = new GameObject("hook" + std::to_string(SDL_GetTicks()));
+            GameObject *hook = new GameObject("hook" + std::to_string(spawnID++));
             hook->transform.scale = Vector2(2, 2);
             hook->layer = CollisionMatrix::PROJECTILE;
             hook->transform.position = position;
@@ -400,7 +343,7 @@ void Game::objectInit() {
         player->layer = CollisionMatrix::PLAYER;
         //tile 9 3 for start
         //tile 88 13 for boss room
-        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(9, 3);
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13);
         // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
@@ -517,7 +460,7 @@ void Game::objectInit() {
 
 #pragma region Powerup
         auto CreateHeal = [player](Vector2 position){
-            GameObject *heal = new GameObject("Heal" + std::to_string(SDL_GetTicks()));
+            GameObject *heal = new GameObject("Heal" + std::to_string(spawnID++));
             heal->layer = CollisionMatrix::POWERUP;
 
             heal->transform.position = position;
@@ -550,7 +493,7 @@ void Game::objectInit() {
         };
 
         auto CreateHookUpgrade = [player, aimStick, CreateHook](Vector2 position){
-            GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(SDL_GetTicks()));
+            GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(spawnID++));
             hookUpgrade->layer = CollisionMatrix::POWERUP;
 
             hookUpgrade->transform.position = position;
@@ -586,7 +529,7 @@ void Game::objectInit() {
         };
 
         auto CreateBootUpgrade = [player](Vector2 position){
-            GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(SDL_GetTicks()));
+            GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(spawnID++));
             bootUpgrade->layer = CollisionMatrix::POWERUP;
 
             bootUpgrade->transform.position = position;
@@ -618,7 +561,7 @@ void Game::objectInit() {
         };
 
         auto CreateShield = [player](Vector2 position){
-            GameObject *shield = new GameObject("Shield" + std::to_string(SDL_GetTicks()));
+            GameObject *shield = new GameObject("Shield" + std::to_string(spawnID++));
             shield->layer = CollisionMatrix::POWERUP;
 
             shield->transform.position = position;
@@ -650,7 +593,7 @@ void Game::objectInit() {
         };
 
         auto CreatePowerUpBox = [](Vector2 position, std::function<GameObject *(Vector2 position)> powerUpFunction){
-            GameObject *powerUpBox = new GameObject("PowerUpBox" + std::to_string(SDL_GetTicks()));
+            GameObject *powerUpBox = new GameObject("PowerUpBox" + std::to_string(spawnID++));
             powerUpBox->layer = CollisionMatrix::WALL;
 
             powerUpBox->transform.position = position;
@@ -674,8 +617,8 @@ void Game::objectInit() {
                         powerup->GetComponent<Rigidbody2D>()->AddForce(POWER_UP_POP_UP_FORCE * Vector2(0, -1));
 
                         GameObjectManager::GetInstance()->AddGameObject(powerup);
-                        GameObjectManager::GetInstance()->RemoveGameObject(powerUpBox->GetName());
                     }
+                    GameObjectManager::GetInstance()->RemoveGameObject(powerUpBox->GetName());
                 }
             });
             
@@ -692,7 +635,7 @@ void Game::objectInit() {
         };
 
         auto CreateCoin = [player](Vector2 position){
-            GameObject *coin = new GameObject("Coin" + std::to_string(SDL_GetTicks()));
+            GameObject *coin = new GameObject("Coin" + std::to_string(spawnID++));
             coin->layer = CollisionMatrix::POWERUP;
 
             coin->transform.position = position;
@@ -771,11 +714,14 @@ void Game::objectInit() {
             tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
         ));
         
+        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateShield
+        ));
 #pragma endregion
 
 #pragma region Physic Box
         auto CreateBox = [](float mass, Vector2 scale, Vector2 position){
-            GameObject *box = new GameObject("Box" + std::to_string(SDL_GetTicks()));
+            GameObject *box = new GameObject("Box" + std::to_string(spawnID++));
             box->layer = CollisionMatrix::WALL;
             box->transform.position = position;
             box->transform.scale = scale;
@@ -797,7 +743,7 @@ void Game::objectInit() {
     
 #pragma region Gate
         auto CreateGate = [](Vector2 position, Vector2 destination){
-            GameObject *gate = new GameObject("Gate" + std::to_string(SDL_GetTicks()));
+            GameObject *gate = new GameObject("Gate" + std::to_string(spawnID++));
             gate->layer = CollisionMatrix::GATE;
             gate->transform.position = position;
             gate->transform.scale = Vector2(4, 4);
@@ -832,7 +778,7 @@ void Game::objectInit() {
 #pragma region Melee projectile setup
 
     auto CreateMeleeProjectile = [](Vector2 direction, float lifeTime, Vector2 position) {
-        GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(SDL_GetTicks()));
+        GameObject *meleeProjectile = new GameObject("MeleeProjectile" + std::to_string(spawnID++));
         meleeProjectile->layer = CollisionMatrix::E_PROJECTILE;
         meleeProjectile->transform.scale = Vector2(3, 3);
         meleeProjectile->transform.position = position;
@@ -882,7 +828,7 @@ void Game::objectInit() {
 
 #pragma region Melee setup
         auto CreateMelee = [player, CreateMeleeProjectile, enemyHurtParticle, CreateCoin, CreateHeal](Vector2 position){
-            GameObject *melee = new GameObject("Melee" + std::to_string(SDL_GetTicks()));
+            GameObject *melee = new GameObject("Melee" + std::to_string(spawnID++));
             melee->layer = CollisionMatrix::ENEMY;
             melee->transform.position = position;
             melee->transform.scale = Vector2(2, 2);
@@ -960,7 +906,7 @@ void Game::objectInit() {
 #pragma region Ranged projectile setup
 
     auto CreateRangedProjectile = [shellParticle](Vector2 direction, float speed, float lifeTime, Vector2 position){
-        GameObject *rangedProjectile = new GameObject("RangedProjectile" + std::to_string(SDL_GetTicks()));
+        GameObject *rangedProjectile = new GameObject("RangedProjectile" + std::to_string(spawnID++));
         rangedProjectile->layer = CollisionMatrix::E_PROJECTILE;
         rangedProjectile->transform.scale = Vector2(4, 4);
         rangedProjectile->transform.position = position;
@@ -992,7 +938,7 @@ void Game::objectInit() {
 
 #pragma region Ranged setup
         auto CreateRanged = [player, CreateRangedProjectile, enemyHurtParticle, CreateCoin, CreateHeal](Vector2 position){
-            GameObject *ranged = new GameObject("Ranged");
+            GameObject *ranged = new GameObject("Ranged" + std::to_string(spawnID++));
             ranged->layer = CollisionMatrix::ENEMY;
             ranged->transform.position = position;
             ranged->transform.scale = Vector2(2, 2);
@@ -1051,7 +997,7 @@ void Game::objectInit() {
 
 #pragma region Moai projectile
         auto CreateMoaiProjectile = [shellParticle](Vector2 direction, float speed, float lifeTime, Vector2 position){
-            GameObject *moaiProjectile = new GameObject("MoaiProjectile" + std::to_string(SDL_GetTicks()));
+            GameObject *moaiProjectile = new GameObject("MoaiProjectile" + std::to_string(spawnID++));
             moaiProjectile->layer = CollisionMatrix::E_PROJECTILE;
             moaiProjectile->transform.scale = Vector2(4, 4);
             moaiProjectile->transform.position = position;
@@ -1089,7 +1035,7 @@ void Game::objectInit() {
 
 #pragma region Moai setup
         auto CreateMoai = [player, CreateMelee, CreateRanged, CreateMoaiProjectile, enemyHurtParticle](Vector2 position){
-            GameObject *moai = new GameObject("Moai" + std::to_string(SDL_GetTicks()));
+            GameObject *moai = new GameObject("Moai" + std::to_string(spawnID++));
             moai->layer = CollisionMatrix::ENEMY;
             moai->transform.position = position;
             moai->transform.scale = Vector2(2, 2);
