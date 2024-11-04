@@ -17,6 +17,16 @@ void MeleeAI::Init() {
         throw "BoxCollider2D not found in MeleeAI::Init()";
     }
 
+    //Ground check
+    baseCol->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+        this->isGrounded = false;
+        if (collider->gameObject->layer == CollisionMatrix::WALL) {
+            if (collider->GetNormal(gameObject->transform.position) == Vector2(0, -1)) {
+                this->isGrounded = true;
+            }
+        }
+    });
+
     // Wall detection collider is exactly the half the size of the base collider
     wallDetectionColl = new BoxCollider2D(gameObject,
                                           Vector2(0, 0),
@@ -120,7 +130,7 @@ Component *MeleeAI::Clone(GameObject *parent) {
 
 // Speed grows as HP lowers
 void MeleeAI::Move() {
-    if (wallDetected || !floorDetected)
+    if ((wallDetected || !floorDetected) && isGrounded)
         walkDirection = -1 * walkDirection;
 
     float newSpeed = speed / ((float)hp->GetCurrentHP() / hp->GetMaxHP());
@@ -149,6 +159,7 @@ void MeleeAI::Attack() {
 void MeleeAI::ResetDetection() {
     wallDetected = false;
     floorDetected = false;
+    isGrounded = false;
 
     wallDetectionColl->SetOffset(
         Vector2(baseCol->size.x / 2 * walkDirection.x, 0));

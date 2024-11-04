@@ -379,7 +379,7 @@ void PlayerWeapon::Update() {
             Vector2 direction = lastDirection;
             if (fabs(shootAngle) > EPS){
                 std :: cout << "shootAngle: " << shootAngle << std::endl;
-                Vector2::Rotate(direction, (rand() % (int)shootAngle * 2 - (int)shootAngle));
+                direction = Vector2::Rotate(direction, (rand() % (int)shootAngle * 2 - (int)shootAngle));
             }
 
             GameObject *shell = createShell(shellSpeed, direction, shellLifetime, gameObject->transform.position);

@@ -35,6 +35,7 @@ private:
     
     //Detection
     void Init();
+    bool isGrounded = false;
     bool wallDetected = false;
     bool floorDetected = false;
     BoxCollider2D *wallDetectionColl = nullptr;

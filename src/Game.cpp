@@ -109,9 +109,6 @@ void Game::objectInit() {
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::WALL, true);
-
-
-
 #pragma endregion
 
     Scene *gameScene = new Scene("Game");
@@ -305,7 +302,6 @@ void Game::objectInit() {
 #pragma endregion
 
 #pragma region Player Setup
-
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
         //tile 10 8 for start
