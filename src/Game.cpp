@@ -347,10 +347,23 @@ void Game::objectInit() {
         Joystick *aimStick = dynamic_cast<Joystick *>(
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT)));
 
-        // player->AddComponent(new PlayerShoot(player, 40, 600, 1000, 5, 10, aimStick, shellDropPS));
-        player->AddComponent(new PlayerShoot(player, 40, 600, 3000, 1, 0, aimStick, nullptr));
-        player->GetComponent<PlayerShoot>()->setSpawnFunction(CreateHook);
+        PlayerWeapon *shotgun = dynamic_cast<PlayerWeapon *>(
+            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, 5, 10, aimStick, shellDropPS))
+        );
+        shotgun->setSpawnFunction(CreateShell);
 
+        PlayerWeapon *meatHook = dynamic_cast<PlayerWeapon *>(
+            player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr))
+        );
+        meatHook->setSpawnFunction(CreateHook);
+
+        ArsenalManager *arsenalManager = dynamic_cast<ArsenalManager *>(
+            player->AddComponent(new ArsenalManager(player))
+        );
+
+        arsenalManager->AddWeapon(shotgun, SDLK_1);
+        arsenalManager->AddWeapon(meatHook, SDLK_2);
+    
         player->AddComponent(new JumpController(player, SDLK_SPACE, 14, 450, CollisionMatrix::WALL));
         player->GetComponent<JumpController>()->BindCollider(player->GetComponent<BoxCollider2D>());
 
@@ -368,7 +381,8 @@ void Game::objectInit() {
         playerHurtParticle->AddComponent(new CircleCollider2D(playerHurtParticle, Vector2(0, 0), 3, false));
 
         ParticleSystem *playerHurtParticleSystem = dynamic_cast<ParticleSystem *>(
-            player->AddComponent(new ParticleSystem(player, playerHurtParticle, 50, 2000, Vector2(0, -1), 10, 360)));
+            player->AddComponent(new ParticleSystem(player, playerHurtParticle, 50, 2000, Vector2(0, -1), 10, 360))
+        );
         playerHurtParticleSystem->Stop();
         player->GetComponent<HPController>()->OnDamage.addHandler([playerHurtParticleSystem]() {
             playerHurtParticleSystem->Emit(5);
@@ -636,7 +650,7 @@ void Game::objectInit() {
                     Vector2(19 * heal->transform.scale.x, 18 * heal->transform.scale.y), false))
             );
 
-            physCol->layer = CollisionMatrix::PROJECTILE;
+            physCol->layer = CollisionMatrix::PARTICLE;
 
             return heal;
         };

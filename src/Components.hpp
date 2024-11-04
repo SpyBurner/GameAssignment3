@@ -129,7 +129,7 @@ public:
     Component *Clone(GameObject *parent);
 };
 
-class PlayerShoot : public Component {
+class PlayerWeapon : public Component {
 private:
     std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell = nullptr;
     float shellSpeed = 0;
@@ -145,10 +145,22 @@ private:
 
     float lastHandOff = 0;
 public:
-    PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem);
+    PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem);
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell);
     void Update();
     void Draw();
+    Component *Clone(GameObject *parent);
+};
+
+class ArsenalManager : public Component {
+private:
+    std::map<SDL_KeyCode, PlayerWeapon *> arsenal;
+    SDL_KeyCode currentWeaponKey;
+public:
+    ArsenalManager(GameObject *parent);
+    void Update();
+    void Draw();
+    void AddWeapon(PlayerWeapon *weapon, SDL_KeyCode key);
     Component *Clone(GameObject *parent);
 };
 

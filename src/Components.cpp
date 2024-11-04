@@ -331,7 +331,7 @@ Component *ShellBehavior::Clone(GameObject *parent) {
 call setSpawnFunction to set the function that will create the shell
 */
 
-PlayerShoot::PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown,
+PlayerWeapon::PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown,
                          float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem) : Component(parent) {
     this->shellSpeed = shellSpeed;
     this->shellLifetime = shellLifeTime;
@@ -344,11 +344,14 @@ PlayerShoot::PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTi
     this->joystick = joystick;
 }
 
-void PlayerShoot::setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell) {
+void PlayerWeapon::setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell) {
     this->createShell = createShell;
 }
 
-void PlayerShoot::Update() {
+void PlayerWeapon::Update() {
+    if (!enabled)
+        return;
+
     if (createShell == nullptr)
         return;
     if (joystick == nullptr) {
@@ -367,8 +370,8 @@ void PlayerShoot::Update() {
         lastHandOff = SDL_GetTicks();
     }
 
-    // 100 ms to aim before shooting
-    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 100) {
+    // 150 ms to aim before shooting
+    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 150) {
 
         for (int i = 0; i < shootAmount; i++) {
 
@@ -390,12 +393,47 @@ void PlayerShoot::Update() {
     }
 }
 
-void PlayerShoot::Draw() {}
+void PlayerWeapon::Draw() {}
 
-Component *PlayerShoot::Clone(GameObject *parent) {
-    PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick, particleSystem);
+Component *PlayerWeapon::Clone(GameObject *parent) {
+    PlayerWeapon *newPlayerShoot = new PlayerWeapon(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick, particleSystem);
     return newPlayerShoot;
 }
+
+
+ArsenalManager::ArsenalManager(GameObject *parent) : Component(parent) {
+    currentWeaponKey = SDLK_UNKNOWN;
+}
+
+void ArsenalManager::Update() {
+    for (auto &weapon : arsenal) {
+        if (Game::event.type == SDL_KEYDOWN && Game::event.key.keysym.sym == weapon.first) {
+            arsenal[currentWeaponKey]->enabled = false;
+            currentWeaponKey = weapon.first;
+            arsenal[currentWeaponKey]->enabled = true;
+        }
+    }
+
+}
+
+void ArsenalManager::Draw() {}
+
+void ArsenalManager::AddWeapon(PlayerWeapon *weapon, SDL_KeyCode key) {
+    arsenal[key] = weapon;
+    if (arsenal.size() == 1)
+        currentWeaponKey = key;
+    else
+        weapon->enabled = false;
+}
+
+Component *ArsenalManager::Clone(GameObject *parent) {
+    ArsenalManager *newArsenalManager = new ArsenalManager(parent);
+    for (auto &weapon : arsenal) {
+        newArsenalManager->AddWeapon(static_cast<PlayerWeapon *>(weapon.second->Clone(parent)), weapon.first);
+    }
+    return newArsenalManager;
+}
+
 
 Orbit::Orbit(GameObject *parent, GameObject *target, float radius, Vector2 originalForward, Joystick *joystick) : Component(parent) {
     this->target = target;
