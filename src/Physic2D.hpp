@@ -17,7 +17,9 @@ public:
 
     void Update();
     void Draw();
+
     void AddForce(Vector2 force);
+    void RemoveAllForce();
 
     void SetDrag(float drag);
     void SetBounciness(float bounciness);
@@ -33,8 +35,10 @@ class Collider2D : public Component {
 private:
     void defaultCollision(Collider2D *other);
 public:
-    bool isTrigger;
+    int layer;
+
     Vector2 offset;
+    bool isTrigger;
     Event<Collider2D *> OnCollisionEnter;
 
 

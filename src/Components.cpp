@@ -194,14 +194,15 @@ void JumpController::OnCollisionEnter(Collider2D *collider) {
     // > 0 for wall jump
     Vector2 normal = collider->GetNormal(gameObject->transform.position);
     lastNormal = normal;
-    if (normal.y > 0)
+
+    if (normal.y > 0 || !enableWallJump && fabs(normal.y) <= EPS)
         return;
 
     grounded = true;
 }
 
 JumpController::JumpController(GameObject *parent, SDL_KeyCode jumpKey,
-                               float jumpForce, float cooldown, CollisionMatrix::Layers whatIsGround) : Component(parent) {
+                               float jumpForce, float cooldown, CollisionMatrix::Layer whatIsGround) : Component(parent) {
     this->jumpKey = jumpKey;
     this->jumpForce = jumpForce;
     this->cooldown = cooldown;
@@ -228,7 +229,9 @@ void JumpController::Update() {
             if (lastNormal.x != 0)
                 direction += lastNormal / 4;
 
+            rigidbody->velocity = Vector2(rigidbody->velocity.x, 0);
             rigidbody->AddForce(direction.Normalize() * jumpForce);
+
             grounded = false;
             lastJumpTime = SDL_GetTicks();
         }
@@ -236,6 +239,10 @@ void JumpController::Update() {
 }
 
 void JumpController::Draw() {}
+
+void JumpController::SetEnableWallJump(bool enableWallJump){
+    this->enableWallJump = enableWallJump;
+}
 
 void JumpController::BindCollider(Collider2D *collider) {
     collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
@@ -307,6 +314,14 @@ void ShellBehavior::Update() {
 
 void ShellBehavior::Draw() {}
 
+void ShellBehavior::SetSender(GameObject *sender) {
+    this->sender = sender;
+}
+
+GameObject *ShellBehavior::GetSender() {
+    return sender;
+}
+
 Component *ShellBehavior::Clone(GameObject *parent) {
     ShellBehavior *newShellBehavior = new ShellBehavior(parent, lifeTime, speed, direction);
     return newShellBehavior;
@@ -317,7 +332,7 @@ call setSpawnFunction to set the function that will create the shell
 */
 
 PlayerShoot::PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown,
-                         float shootAmount, float shootAngle, Joystick *joystick) : Component(parent) {
+                         float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem) : Component(parent) {
     this->shellSpeed = shellSpeed;
     this->shellLifetime = shellLifeTime;
 
@@ -325,7 +340,7 @@ PlayerShoot::PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTi
     this->shootAmount = shootAmount;
     this->shootAngle = shootAngle;
 
-    particleSystem = gameObject->GetComponent<ParticleSystem>();
+    particleSystem = particleSystem;
     this->joystick = joystick;
 }
 
@@ -348,16 +363,22 @@ void PlayerShoot::Update() {
     if (joystick->GetDirection().Magnitude() > VELOCITY_EPS) {
         shoot = true;
         lastDirection = joystick->GetDirection().Normalize();
+    } else {
+        lastHandOff = SDL_GetTicks();
     }
 
-    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown) {
+    // 100 ms to aim before shooting
+    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 100) {
 
         for (int i = 0; i < shootAmount; i++) {
 
             // Rotate direction
-            Vector2 direction = Vector2::Rotate(lastDirection, (rand() % (int)shootAngle * 2 - (int)shootAngle));
+            Vector2 direction = lastDirection;
+            if (shootAngle != 0)
+                Vector2::Rotate(direction, (rand() % (int)shootAngle * 2 - (int)shootAngle));
 
             GameObject *shell = createShell(shellSpeed, direction, shellLifetime, gameObject->transform.position);
+            shell->GetComponent<ShellBehavior>()->SetSender(gameObject);
 
             GameObjectManager::GetInstance()->AddGameObject(shell);
         }
@@ -372,7 +393,7 @@ void PlayerShoot::Update() {
 void PlayerShoot::Draw() {}
 
 Component *PlayerShoot::Clone(GameObject *parent) {
-    PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick);
+    PlayerShoot *newPlayerShoot = new PlayerShoot(parent, shellSpeed, shellLifetime, shootCooldown, shootAmount, shootAngle, joystick, particleSystem);
     return newPlayerShoot;
 }
 
@@ -451,8 +472,6 @@ Component *FLipToVelocity::Clone(GameObject *parent) {
 }
 
 Camera::Camera(GameObject *parent, GameObject *follow, Vector2 size, Vector2 offset, float speed, Vector2 deadZone) : Component(parent) {
-    this->follow = follow;
-
     this->size = size;
     this->offset = offset;
 
@@ -461,6 +480,8 @@ Camera::Camera(GameObject *parent, GameObject *follow, Vector2 size, Vector2 off
     this->speed = speed;
 
     rigidbody = gameObject->GetComponent<Rigidbody2D>();
+
+    SetFollow(follow);
 }
 
 void Camera::Update() {
@@ -505,9 +526,171 @@ Vector2 Camera::ScreenToWorld(Vector2 screenPos) {
 
 void Camera::SetFollow(GameObject *follow) {
     this->follow = follow;
+
+    if (follow == nullptr)
+        return;
+
+    HPController *hpController = follow->GetComponent<HPController>();
+
+    hpController->OnDeath.addHandler([this]() {
+        this->follow = nullptr;
+    });
 }
 
 Component *Camera::Clone(GameObject *parent) {
     Camera *newCamera = new Camera(parent, follow, size, offset, speed, deadZone);
     return newCamera;
+}
+
+HPController::HPController(GameObject *parent, int maxHP, float invincibleTime) : Component(parent) {
+    this->maxHP = maxHP;
+    this->currentHP = maxHP;
+
+    this->invincibleTime = invincibleTime;
+    this->lastDamageTime = lastDamageTime;
+}
+
+void HPController::Update() {
+    if (isDead)
+        return;
+    if (currentHP <= 0) {
+        isDead = true;
+        GameObject::Destroy(gameObject->GetName());
+    }
+}
+
+void HPController::Draw() {}
+
+void HPController::TakeDamage(int damage) {
+    if (isDead || SDL_GetTicks() - lastDamageTime < invincibleTime)
+        return;
+    lastDamageTime = SDL_GetTicks();
+    if (!isInvincible)
+        currentHP -= damage;
+
+    OnDamage.raise();
+    OnHPChange.raise();
+
+    if (currentHP <= 0) {
+        isDead = true;
+        OnDeath.raise();
+        GameObject::Destroy(gameObject->GetName());
+    }
+}
+
+void HPController::Heal(int amount) {
+    if (isDead)
+        return;
+    currentHP += amount;
+
+    OnHPChange.raise();
+
+    if (currentHP > maxHP)
+        currentHP = maxHP;
+}
+
+void HPController::SetInvincible(bool invincible) {
+    isInvincible = invincible;
+}
+
+void HPController::SetParticleSystem(ParticleSystem *particleSystem) {
+    this->particleSystem = particleSystem;
+}
+
+int HPController::GetCurrentHP() {
+    return currentHP;
+}
+
+int HPController::GetMaxHP() {
+    return maxHP;
+}
+
+void HPController::Stun(float time){
+    if (isDead)
+        return;
+    lastStunTime = SDL_GetTicks();
+    stunTime = time;
+}
+
+bool HPController::IsStunned(){
+    return SDL_GetTicks() - lastStunTime < stunTime;
+}
+
+bool HPController::IsDead() {
+    return isDead;
+}
+
+Component *HPController::Clone(GameObject *parent) {
+    HPController *newHPController = new HPController(parent, maxHP, invincibleTime);
+    return newHPController;
+}
+
+DamageOnCollision::DamageOnCollision(GameObject *parent, int damage, int targetLayer, bool destroyOnCollision) : Component(parent) {
+    this->damage = damage;
+    this->targetLayer = targetLayer;
+    this->destroyOnCollision = destroyOnCollision;
+
+    Collider2D *collider = gameObject->GetComponent<Collider2D>();
+    if (collider) {
+        collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+            OnCollisionEnter(collider);
+        });
+    } else {
+        std::cout << "DamageOnCollision: No collider found" << std::endl;
+    }
+}
+
+void DamageOnCollision::OnCollisionEnter(Collider2D *collider) {
+    if (collider->layer == targetLayer) {
+        HPController *hpController = collider->gameObject->GetComponent<HPController>();
+        if (hpController) {
+            hpController->TakeDamage(damage);
+        }
+
+        if (destroyOnCollision) {
+            GameObject::Destroy(gameObject->GetName());
+        }
+    }
+}
+
+void DamageOnCollision::Update() {}
+
+void DamageOnCollision::Draw() {}
+
+Component *DamageOnCollision::Clone(GameObject *parent) {
+    // Clone implementation
+    return new DamageOnCollision(parent, damage, targetLayer, destroyOnCollision);
+}
+
+PowerUp::PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObject *)> powerUpFunction, int healAmount) : Component(parent) {
+    this->targetLayer = targetLayer;
+    this->powerUpFunction = powerUpFunction;
+    this->healAmount = healAmount;
+    this->hpController = gameObject->GetComponent<HPController>();
+
+    Collider2D *collider = gameObject->GetComponent<Collider2D>();
+    if (collider) {
+        collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+            if (collider->layer == this->targetLayer) {
+                if (this->powerUpFunction) {
+                    this->powerUpFunction(collider->gameObject);
+                }
+                if (hpController) {
+                    hpController->Heal(this->healAmount);
+                }
+                GameObject::Destroy(gameObject->GetName());
+            }
+        });
+    } else {
+        std::cout << "PowerUp: No collider found" << std::endl;
+    }
+}
+
+void PowerUp::Update() {}
+
+void PowerUp::Draw() {}
+
+Component *PowerUp::Clone(GameObject *parent) {
+    PowerUp *newPlayerPowerUp = new PowerUp(parent, targetLayer, powerUpFunction, healAmount);
+    return newPlayerPowerUp;
 }

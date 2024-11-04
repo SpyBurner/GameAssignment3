@@ -19,21 +19,24 @@ class CollisionMatrix {
 private:
     static bool COLLISION_MATRIX[COLL_MATRIX_SIZE][COLL_MATRIX_SIZE];
 public:
-    enum Layers {
+    enum Layer {
         PLAYER = 1,
         ENEMY = 2,
-        PROJECTILE = 4,
-        WALL = 8,
-        CAMERA = 16,
-        PARTICLE = 32,
-        DEFAULT = PLAYER | ENEMY | PROJECTILE | WALL | CAMERA | PARTICLE
+        PROJECTILE = 3,
+        E_PROJECTILE = 4,
+        WALL = 5,
+        CAMERA = 6,
+        PARTICLE = 7,
+        DETECTION = 8,
+        SPIKE = 9,
+        POWERUP = 10,
+        DEFAULT = 0
     };
 
     static void init();
     static bool checkCollisionMatrix(int a, int b);
     static void setCollisionMatrix(int a, int b, bool value);
 };
-
 
 // Event
 template <typename... Args>
@@ -206,6 +209,7 @@ public:
     std::string GetName();
     void AdvanceFrame();
     void Ready();
+    bool IsFinished();
     std::pair<SDL_Texture *, SDL_Rect> GetCurrentSpriteInfo();
 };
 
