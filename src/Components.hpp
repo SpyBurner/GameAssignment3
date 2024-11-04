@@ -153,7 +153,6 @@ public:
     void Draw();
     Component *Clone(GameObject *parent);
 };
-
 class ArsenalManager : public Component {
 private:
     std::map<SDL_KeyCode, PlayerWeapon *> arsenal;
@@ -229,6 +228,10 @@ private:
     float lastStunTime = 0;
 
     ParticleSystem *particleSystem = nullptr;
+
+    std::vector<std::function<GameObject *(Vector2 position)>> dropFunctions;
+
+    void DropItem();
 public:
     Event<> OnDeath = Event<>();
     Event<> OnDamage = Event<>();
@@ -239,6 +242,8 @@ public:
     void Draw();
     void TakeDamage(int damage);
     void Heal(int amount);
+
+    void AddDropFunction(std::function<GameObject *(Vector2 position)> dropFunction);
 
     void SetInvincible(bool invincible);
     void SetParticleSystem(ParticleSystem *particleSystem);
@@ -251,6 +256,18 @@ public:
 
     bool IsDead();
 
+    Component *Clone(GameObject *parent);
+};
+
+class CoinCollector : public Component {
+private:
+    int coinCount = 0;
+public:
+    CoinCollector(GameObject *parent);
+    void Update();
+    void Draw();
+    void AddCoin();
+    int GetCoinCount();
     Component *Clone(GameObject *parent);
 };
 

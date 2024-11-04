@@ -595,6 +595,22 @@ HPController::HPController(GameObject *parent, int maxHP, float invincibleTime) 
 
     this->invincibleTime = invincibleTime;
     this->lastDamageTime = lastDamageTime;
+
+    OnDeath.addHandler([this](){
+        DropItem();
+    });
+}
+
+void HPController::DropItem(){
+    if (!dropFunctions.empty()){
+        GameObject *item = dropFunctions[rand() % dropFunctions.size()](gameObject->transform.position);
+        GameObjectManager::GetInstance()->AddGameObject(item);
+
+        Rigidbody2D *rb = item->GetComponent<Rigidbody2D>();
+        if (rb){
+            rb->AddForce(Vector2(0, -1) * POWER_UP_POP_UP_FORCE);
+        }
+    }
 }
 
 void HPController::Update() {
@@ -630,10 +646,14 @@ void HPController::Heal(int amount) {
         return;
     currentHP += amount;
 
-    OnHPChange.raise();
-
     if (currentHP > maxHP)
         currentHP = maxHP;
+        
+    OnHPChange.raise();
+}
+
+void HPController::AddDropFunction(std::function<GameObject *(Vector2 position)> dropFunction){
+    this->dropFunctions.push_back(dropFunction);
 }
 
 void HPController::SetInvincible(bool invincible) {
@@ -670,6 +690,26 @@ bool HPController::IsDead() {
 Component *HPController::Clone(GameObject *parent) {
     HPController *newHPController = new HPController(parent, maxHP, invincibleTime);
     return newHPController;
+}
+
+CoinCollector::CoinCollector(GameObject *parent) : Component(parent) {}
+
+void CoinCollector::Update() {}
+
+void CoinCollector::Draw() {}
+
+void CoinCollector::AddCoin() {
+    coinCount++;
+}
+
+int CoinCollector::GetCoinCount() {
+    return coinCount;
+}
+
+Component *CoinCollector::Clone(GameObject *parent) {
+    CoinCollector *newCoinCollector = new CoinCollector(parent);
+    newCoinCollector->coinCount = coinCount;
+    return newCoinCollector;
 }
 
 DamageOnCollision::DamageOnCollision(GameObject *parent, int damage, int targetLayer, bool destroyOnCollision) : Component(parent) {
