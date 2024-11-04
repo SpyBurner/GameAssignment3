@@ -5,7 +5,7 @@
 #include <sstream>
 
 // #define DEBUG_LOAD 1
-#define DEBUG_BUILD 1
+// #define DEBUG_BUILD 1
 
 Tilemap::Tilemap(GameObject *gameObject, Vector2 tileSize, Vector2 tilesetDimension, bool moving, float speed, SDL_Texture *texture, std::string mapPath)
     : Component(gameObject) {

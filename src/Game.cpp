@@ -348,17 +348,11 @@ void Game::objectInit() {
         );
         shotgun->setSpawnFunction(CreateShell);
 
-        PlayerWeapon *meatHook = dynamic_cast<PlayerWeapon *>(
-            player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr))
-        );
-        meatHook->setSpawnFunction(CreateHook);
-
         ArsenalManager *arsenalManager = dynamic_cast<ArsenalManager *>(
             player->AddComponent(new ArsenalManager(player))
         );
 
         arsenalManager->AddWeapon(shotgun, SDLK_1);
-        arsenalManager->AddWeapon(meatHook, SDLK_2);
     
         player->AddComponent(new JumpController(player, SDLK_SPACE, 14, 450, CollisionMatrix::WALL));
         player->GetComponent<JumpController>()->BindCollider(player->GetComponent<BoxCollider2D>());
@@ -527,9 +521,6 @@ void Game::objectInit() {
 
             return melee;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateMelee(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(24, 8)
-        ));
 #pragma endregion
 
 #pragma region Ranged projectile setup
@@ -616,8 +607,11 @@ void Game::objectInit() {
 
             return ranged;
         };
+            
 
-
+        GameObjectManager::GetInstance()->AddGameObject(CreateRanged(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(24, 4)
+        ));
 
 #pragma endregion
     
@@ -654,7 +648,77 @@ void Game::objectInit() {
 
             return heal;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(Vector2(600, 100)));
+        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(Vector2(1200, 100)));
+
+        auto CreateHookUpgrade = [player, aimStick, CreateHook](Vector2 position){
+            GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(rand() + rand()));
+            hookUpgrade->layer = CollisionMatrix::POWERUP;
+
+            hookUpgrade->transform.position = position;
+            hookUpgrade->transform.scale = Vector2(2, 2);
+
+            hookUpgrade->AddComponent(new SpriteRenderer(hookUpgrade, Vector2(19, 18), 5, LoadSpriteSheet("Assets/Sprites/Player/hook.png")));
+            hookUpgrade->AddComponent(new Rigidbody2D(hookUpgrade, 1, 0.025, 0, 1.0));
+
+            // Trigger
+            hookUpgrade->AddComponent(new BoxCollider2D(hookUpgrade, Vector2(0, 0),
+                Vector2(19 * hookUpgrade->transform.scale.x, 18 * hookUpgrade->transform.scale.y), true));
+            
+            auto UnlockHook = [aimStick, CreateHook](GameObject *player){
+                PlayerWeapon *meatHook = dynamic_cast<PlayerWeapon *>(
+                    player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr))
+                );
+                meatHook->setSpawnFunction(CreateHook);
+                player->GetComponent<ArsenalManager>()->AddWeapon(meatHook, SDLK_2);
+                std::cout << "Hook unlocked" << std::endl;
+            };
+
+            hookUpgrade->AddComponent(new PowerUp(hookUpgrade, CollisionMatrix::PLAYER, UnlockHook, 0));
+
+            // Physic
+            BoxCollider2D *physCol = dynamic_cast<BoxCollider2D *>(
+                hookUpgrade->AddComponent(new BoxCollider2D(hookUpgrade, Vector2(0, 0),
+                    Vector2(19 * hookUpgrade->transform.scale.x, 18 * hookUpgrade->transform.scale.y), false))
+            );
+
+            physCol->layer = CollisionMatrix::PARTICLE;
+
+            return hookUpgrade;
+        };
+        GameObjectManager::GetInstance()->AddGameObject(CreateHookUpgrade(Vector2(900, 100)));
+
+        auto CreateBootUpgrade = [player](Vector2 postion){
+            GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(rand() + rand()));
+            bootUpgrade->layer = CollisionMatrix::POWERUP;
+
+            bootUpgrade->transform.position = postion;
+            bootUpgrade->transform.scale = Vector2(3, 3);
+
+            bootUpgrade->AddComponent(new SpriteRenderer(bootUpgrade, Vector2(13, 14), 5, LoadSpriteSheet("Assets/Sprites/Powerup/spikeboot.png")));
+            bootUpgrade->AddComponent(new Rigidbody2D(bootUpgrade, 1, 0.025, 0, 1.0));
+
+            // Trigger
+            bootUpgrade->AddComponent(new BoxCollider2D(bootUpgrade, Vector2(0, 0),
+                Vector2(13 * bootUpgrade->transform.scale.x, 14 * bootUpgrade->transform.scale.y), true));
+            
+            auto UnlockBoot = [player](GameObject *player){
+                player->GetComponent<JumpController>()->SetEnableWallJump(true);
+                std::cout << "Spike boot unlocked" << std::endl;
+            };
+
+            bootUpgrade->AddComponent(new PowerUp(bootUpgrade, CollisionMatrix::PLAYER, UnlockBoot, 0));
+
+            // Physic
+            BoxCollider2D *physCol = dynamic_cast<BoxCollider2D *>(
+                bootUpgrade->AddComponent(new BoxCollider2D(bootUpgrade, Vector2(0, 0),
+                    Vector2(13 * bootUpgrade->transform.scale.x, 14 * bootUpgrade->transform.scale.y), false))
+            );
+
+            physCol->layer = CollisionMatrix::PARTICLE;
+
+            return bootUpgrade;
+        };
+        GameObjectManager::GetInstance()->AddGameObject(CreateBootUpgrade(Vector2(1500, 100)));
 #pragma endregion
     });
 
