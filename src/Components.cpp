@@ -194,7 +194,8 @@ void JumpController::OnCollisionEnter(Collider2D *collider) {
     // > 0 for wall jump
     Vector2 normal = collider->GetNormal(gameObject->transform.position);
     lastNormal = normal;
-    if (normal.y > 0)
+
+    if (normal.y > 0 || !enableWallJump && fabs(normal.y) <= EPS)
         return;
 
     grounded = true;
@@ -238,6 +239,10 @@ void JumpController::Update() {
 }
 
 void JumpController::Draw() {}
+
+void JumpController::SetEnableWallJump(bool enableWallJump){
+    this->enableWallJump = enableWallJump;
+}
 
 void JumpController::BindCollider(Collider2D *collider) {
     collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
@@ -358,12 +363,11 @@ void PlayerShoot::Update() {
     if (joystick->GetDirection().Magnitude() > VELOCITY_EPS) {
         shoot = true;
         lastDirection = joystick->GetDirection().Normalize();
-    }
-    else{
+    } else {
         lastHandOff = SDL_GetTicks();
     }
 
-    //100 ms to aim before shooting
+    // 100 ms to aim before shooting
     if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 100) {
 
         for (int i = 0; i < shootAmount; i++) {
@@ -606,4 +610,41 @@ bool HPController::IsDead() {
 Component *HPController::Clone(GameObject *parent) {
     HPController *newHPController = new HPController(parent, maxHP, invincibleTime);
     return newHPController;
+}
+
+DamageOnCollision::DamageOnCollision(GameObject *parent, int damage, int targetLayer, bool destroyOnCollision) : Component(parent) {
+    this->damage = damage;
+    this->targetLayer = targetLayer;
+    this->destroyOnCollision = destroyOnCollision;
+
+    Collider2D *collider = gameObject->GetComponent<Collider2D>();
+    if (collider) {
+        collider->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+            OnCollisionEnter(collider);
+        });
+    } else {
+        std::cout << "DamageOnCollision: No collider found" << std::endl;
+    }
+}
+
+void DamageOnCollision::OnCollisionEnter(Collider2D *collider) {
+    if (collider->layer == targetLayer) {
+        HPController *hpController = collider->gameObject->GetComponent<HPController>();
+        if (hpController) {
+            hpController->TakeDamage(damage);
+        }
+
+        if (destroyOnCollision) {
+            GameObject::Destroy(gameObject->GetName());
+        }
+    }
+}
+
+void DamageOnCollision::Update() {}
+
+void DamageOnCollision::Draw() {}
+
+Component *DamageOnCollision::Clone(GameObject *parent) {
+    // Clone implementation
+    return new DamageOnCollision(parent, damage, targetLayer, destroyOnCollision);
 }

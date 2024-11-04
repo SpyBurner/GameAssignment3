@@ -202,7 +202,6 @@ void RangedAI::Update() {
         }
     }
 
-    animator->Play("Walk");
     if (target && (target->transform.position - gameObject->transform.position).Magnitude() <= attackRange) {
         if (SDL_GetTicks() - lastAttackTime >= attackCooldown) {
             Attack();

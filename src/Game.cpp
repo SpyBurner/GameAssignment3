@@ -5,6 +5,7 @@
 #include "Global.hpp"
 #include "Helper.hpp"
 #include "Physic2D.hpp"
+#include "Tilemap.hpp"
 #include "SDLCustomEvent.hpp"
 
 
@@ -101,69 +102,82 @@ void Game::objectInit() {
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::PROJECTILE, CollisionMatrix::ENEMY, true);
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::DETECTION, CollisionMatrix::WALL, true);
+
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::SPIKE, CollisionMatrix::PLAYER, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::SPIKE, CollisionMatrix::ENEMY, true);
 #pragma endregion
 
     Scene *gameScene = new Scene("Game");
     gameScene->AssignLogic([gameScene, this]() {
         Game::state = GAME;
         // SoundManager::GetInstance()->PlayMusic("GameBgm");
+#pragma region Tilemap
+        GameObject *tilemap = new GameObject("Tilemap");
+
+        tilemap->layer = CollisionMatrix::PROJECTILE;
+        tilemap->transform.position = Vector2(0, 0);
+        tilemap->transform.scale = Vector2(4, 4);
+        tilemap->AddComponent(new Tilemap(tilemap, Vector2(16, 16), Vector2(112, 144),  false, 0, LoadSpriteSheet("Assets/Sprites/Tileset/tileset.png"), "Assets/tilemap_rebuilt.txt"));
+
+        GameObjectManager::GetInstance()->AddGameObject(tilemap);
+#pragma endregion
 
 #pragma region Wall Setup
-        GameObject *wall = new GameObject("Wall");
-        wall->layer = CollisionMatrix::WALL;
-        wall->transform.rotation = 0;
-        wall->transform.position = Vector2(1000, 700);
-        wall->transform.scale = Vector2(500, 2);
-        wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(7500, 60), false));
+        // GameObject *wall = new GameObject("Wall");
+        // wall->layer = CollisionMatrix::WALL;
+        // wall->transform.rotation = 0;
+        // wall->transform.position = Vector2(1000, 700);
+        // wall->transform.scale = Vector2(500, 2);
+        // wall->AddComponent(new SpriteRenderer(wall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        // wall->AddComponent(new BoxCollider2D(wall, Vector2(0, 0), Vector2(7500, 60), false));
 
-        GameObjectManager::GetInstance()->AddGameObject(wall);
-        // Left Wall
-        GameObject *leftWall = new GameObject("LeftWall");
-        leftWall->layer = CollisionMatrix::WALL;
-        leftWall->transform.rotation = 0;
-        leftWall->transform.position = Vector2(-200, 400); // Adjust position as needed
-        leftWall->transform.scale = Vector2(3, 100);       // Adjust scale as needed
-        leftWall->AddComponent(new SpriteRenderer(leftWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        leftWall->AddComponent(new BoxCollider2D(leftWall, Vector2(0, 0), Vector2(45, 3000), false));
+        // GameObjectManager::GetInstance()->AddGameObject(wall);
+        // // Left Wall
+        // GameObject *leftWall = new GameObject("LeftWall");
+        // leftWall->layer = CollisionMatrix::WALL;
+        // leftWall->transform.rotation = 0;
+        // leftWall->transform.position = Vector2(-200, 400); // Adjust position as needed
+        // leftWall->transform.scale = Vector2(3, 100);       // Adjust scale as needed
+        // leftWall->AddComponent(new SpriteRenderer(leftWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        // leftWall->AddComponent(new BoxCollider2D(leftWall, Vector2(0, 0), Vector2(45, 3000), false));
 
-        GameObjectManager::GetInstance()->AddGameObject(leftWall);
+        // GameObjectManager::GetInstance()->AddGameObject(leftWall);
 
-        // Right Wall
-        GameObject *rightWall = new GameObject("RightWall");
-        rightWall->layer = CollisionMatrix::WALL;
-        rightWall->transform.rotation = 0;
-        rightWall->transform.position = Vector2(2000, 400); // Adjust position as needed
-        rightWall->transform.scale = Vector2(2, 100);       // Adjust scale as needed
-        rightWall->AddComponent(new SpriteRenderer(rightWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        rightWall->AddComponent(new BoxCollider2D(rightWall, Vector2(0, 0), Vector2(30, 1500), false));
+        // // Right Wall
+        // GameObject *rightWall = new GameObject("RightWall");
+        // rightWall->layer = CollisionMatrix::WALL;
+        // rightWall->transform.rotation = 0;
+        // rightWall->transform.position = Vector2(2000, 400); // Adjust position as needed
+        // rightWall->transform.scale = Vector2(2, 100);       // Adjust scale as needed
+        // rightWall->AddComponent(new SpriteRenderer(rightWall, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        // rightWall->AddComponent(new BoxCollider2D(rightWall, Vector2(0, 0), Vector2(30, 1500), false));
 
-        GameObjectManager::GetInstance()->AddGameObject(rightWall);
+        // GameObjectManager::GetInstance()->AddGameObject(rightWall);
 
-        // AI Test Walls
-        GameObject *lowWall1 = new GameObject("LowWall1");
-        lowWall1->layer = CollisionMatrix::WALL;
-        lowWall1->transform.rotation = 0;
-        lowWall1->transform.position = Vector2(50, 600); // Adjust position as needed
-        lowWall1->transform.scale = Vector2(5, 5);       // Adjust scale as needed
-        lowWall1->AddComponent(new SpriteRenderer(lowWall1, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        lowWall1->AddComponent(new BoxCollider2D(lowWall1, Vector2(0, 0),
-                                                 Vector2(15 * lowWall1->transform.scale.x, 30 * lowWall1->transform.scale.y),
-                                                 false));
+        // // AI Test Walls
+        // GameObject *lowWall1 = new GameObject("LowWall1");
+        // lowWall1->layer = CollisionMatrix::WALL;
+        // lowWall1->transform.rotation = 0;
+        // lowWall1->transform.position = Vector2(50, 600); // Adjust position as needed
+        // lowWall1->transform.scale = Vector2(5, 5);       // Adjust scale as needed
+        // lowWall1->AddComponent(new SpriteRenderer(lowWall1, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        // lowWall1->AddComponent(new BoxCollider2D(lowWall1, Vector2(0, 0),
+        //                                          Vector2(15 * lowWall1->transform.scale.x, 30 * lowWall1->transform.scale.y),
+        //                                          false));
 
-        GameObjectManager::GetInstance()->AddGameObject(lowWall1);
+        // GameObjectManager::GetInstance()->AddGameObject(lowWall1);
 
-        GameObject *lowWall2 = new GameObject("LowWall2");
-        lowWall2->layer = CollisionMatrix::WALL;
-        lowWall2->transform.rotation = 0;
-        lowWall2->transform.position = Vector2(1000, 600); // Adjust position as needed
-        lowWall2->transform.scale = Vector2(100, 5);       // Adjust scale as needed
-        lowWall2->AddComponent(new SpriteRenderer(lowWall2, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
-        lowWall2->AddComponent(new BoxCollider2D(lowWall2, Vector2(0, 0),
-                                                 Vector2(15 * lowWall2->transform.scale.x, 30 * lowWall2->transform.scale.y),
-                                                 false));
+        // GameObject *lowWall2 = new GameObject("LowWall2");
+        // lowWall2->layer = CollisionMatrix::WALL;
+        // lowWall2->transform.rotation = 0;
+        // lowWall2->transform.position = Vector2(1000, 600); // Adjust position as needed
+        // lowWall2->transform.scale = Vector2(100, 5);       // Adjust scale as needed
+        // lowWall2->AddComponent(new SpriteRenderer(lowWall2, Vector2(15, 30), 0, LoadSpriteSheet("Assets/wall.png")));
+        // lowWall2->AddComponent(new BoxCollider2D(lowWall2, Vector2(0, 0),
+        //                                          Vector2(15 * lowWall2->transform.scale.x, 30 * lowWall2->transform.scale.y),
+        //                                          false));
 
-        GameObjectManager::GetInstance()->AddGameObject(lowWall2);
+        // GameObjectManager::GetInstance()->AddGameObject(lowWall2);
 #pragma endregion
 
 #pragma region Shell Setup
@@ -236,16 +250,19 @@ void Game::objectInit() {
 
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
-        player->transform.position = Vector2(640, 100);
+        //tile 10 8 for start
+        //tile 81 14 for boss room
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(81, 14);
+        // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
         player->AddComponent(new SpriteRenderer(player, Vector2(35, 37), 10, nullptr));
 
         player->AddComponent(new Animator(player,
-                                          {
-                                              AnimationClip("Idle", "Assets/Sprites/Player/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
-                                              AnimationClip("Walk", "Assets/Sprites/Player/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
-                                          }));
+            {
+                AnimationClip("Idle", "Assets/Sprites/Player/player_idle.png", Vector2(15, 27), 1000, true, 1.0, 0, 2),
+                AnimationClip("Walk", "Assets/Sprites/Player/player_walking.png", Vector2(15, 27), 1000, true, 1.0, 0, 4),
+            }));
 
         player->GetComponent<Animator>()->Play("Idle");
 
@@ -474,14 +491,14 @@ void Game::objectInit() {
         auto CreateRanged = [player, CreateRangedProjectile, enemyHurtParticle](Vector2 position){
             GameObject *ranged = new GameObject("Ranged");
             ranged->layer = CollisionMatrix::ENEMY;
-            ranged->transform.position = Vector2(450, 100);
+            ranged->transform.position = Vector2(700, 100);
             ranged->transform.scale = Vector2(2, 2);
 
             ranged->AddComponent(new SpriteRenderer(ranged, Vector2(0, 0), 5, nullptr));
             ranged->AddComponent(new Animator(ranged,
-                                            {
-                                                AnimationClip("Walk", "Assets/Sprites/Enemy/proj_enemy.png", Vector2(48, 48), 800, true, 1.0, 0, 3),
-                                            }));
+            {
+                AnimationClip("Walk", "Assets/Sprites/Enemy/proj_enemy.png", Vector2(48, 48), 1000, true, 1.0, 0, 3),
+            }));
             ranged->GetComponent<Animator>()->Play("Walk");
 
             ranged->AddComponent(new Rigidbody2D(ranged, 1, 0.025, 0.8, 0));
@@ -522,6 +539,8 @@ void Game::objectInit() {
             return ranged;
         };
         GameObjectManager::GetInstance()->AddGameObject(CreateRanged(Vector2(450, 100)));
+
+
 
 #pragma endregion
     });

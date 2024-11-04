@@ -28,6 +28,8 @@ public:
         CAMERA = 6,
         PARTICLE = 7,
         DETECTION = 8,
+        SPIKE = 9,
+        POWERUP = 10,
         DEFAULT = 0
     };
 

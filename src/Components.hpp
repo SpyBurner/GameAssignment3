@@ -83,10 +83,14 @@ private:
     Vector2 lastNormal = Vector2(0, 0);
     void OnCollisionEnter(Collider2D *collider);
 
+    bool enableWallJump = false;
 public:
     JumpController(GameObject *parent, SDL_KeyCode jumpKey, float jumpForce, float cooldown, CollisionMatrix::Layer whatIsGround);
     void Update();
     void Draw();
+
+    void SetEnableWallJump(bool enableWallJump);
+
     void BindCollider(Collider2D *collider);
     Component *Clone(GameObject *parent);
 };
@@ -227,6 +231,19 @@ public:
 
     bool IsDead();
 
+    Component *Clone(GameObject *parent);
+};
+
+class DamageOnCollision : public Component {
+private:
+    int targetLayer = CollisionMatrix::DEFAULT;
+    int damage = 0;
+    bool destroyOnCollision = false;
+public:
+    DamageOnCollision(GameObject *parent, int damage, int targetLayer, bool destroyOnCollision);
+    void OnCollisionEnter(Collider2D *collider);
+    void Update();
+    void Draw();
     Component *Clone(GameObject *parent);
 };
 
