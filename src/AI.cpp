@@ -1,5 +1,5 @@
 #include "AI.hpp"
-
+#include <math.h>
 #pragma region MeleeAI
 
 MeleeAI::MeleeAI(GameObject *parent, float speed, float attackRange, float attackCooldown) : Component(parent) {
@@ -16,6 +16,16 @@ void MeleeAI::Init() {
     if (baseCol == nullptr) {
         throw "BoxCollider2D not found in MeleeAI::Init()";
     }
+
+    //Ground check
+    baseCol->OnCollisionEnter.addHandler([this](Collider2D *collider) {
+        this->isGrounded = false;
+        if (collider->gameObject->layer == CollisionMatrix::WALL) {
+            if (collider->GetNormal(gameObject->transform.position) == Vector2(0, -1)) {
+                this->isGrounded = true;
+            }
+        }
+    });
 
     // Wall detection collider is exactly the half the size of the base collider
     wallDetectionColl = new BoxCollider2D(gameObject,
@@ -56,7 +66,7 @@ void MeleeAI::SetTarget(GameObject *target) {
     this->target = target;
 
     target->GetComponent<HPController>()->OnDeath.addHandler([this]() {
-        this->SetTarget(nullptr);
+        this->target = nullptr;
     });
 }
 
@@ -69,7 +79,7 @@ void MeleeAI::Update() {
         }
     }
 
-    if (!enabled || !target || hp->IsDead())
+    if (!enabled || !target || hp->IsDead() || hp->IsStunned())
         return;
 
     if (rb == nullptr) {
@@ -97,6 +107,7 @@ void MeleeAI::Update() {
         // In range & in front & off cooldown
         if (target && distance.Magnitude() <= attackRange && Vector2::Dot(walkDirection, distance) > 0 && SDL_GetTicks() - lastAttackTime >= attackCooldown) {
             state = ATTACK;
+            rb->RemoveAllForce();
         } else
             Move();
     } else if (state == ATTACK) {
@@ -119,7 +130,7 @@ Component *MeleeAI::Clone(GameObject *parent) {
 
 // Speed grows as HP lowers
 void MeleeAI::Move() {
-    if (wallDetected || !floorDetected)
+    if ((wallDetected || !floorDetected) && isGrounded)
         walkDirection = -1 * walkDirection;
 
     float newSpeed = speed / ((float)hp->GetCurrentHP() / hp->GetMaxHP());
@@ -128,7 +139,11 @@ void MeleeAI::Move() {
         newSpeed = speed * 4;
     }
 
-    rb->velocity = Vector2(walkDirection.x * newSpeed, rb->velocity.y);
+    rb->AddForce(walkDirection * newSpeed);
+    if (fabs(rb->velocity.x) > newSpeed) {
+
+        rb->velocity = Vector2(newSpeed * walkDirection.x, rb->velocity.y);
+    }
 }
 
 void MeleeAI::Attack() {
@@ -144,6 +159,7 @@ void MeleeAI::Attack() {
 void MeleeAI::ResetDetection() {
     wallDetected = false;
     floorDetected = false;
+    isGrounded = false;
 
     wallDetectionColl->SetOffset(
         Vector2(baseCol->size.x / 2 * walkDirection.x, 0));
@@ -185,7 +201,7 @@ void RangedAI::Update() {
         }
     }
 
-    if (!enabled || !target || hp->IsDead())
+    if (!enabled || !target || hp->IsDead() || hp->IsStunned())
         return;
 
     if (rb == nullptr) {
@@ -202,8 +218,17 @@ void RangedAI::Update() {
         }
     }
 
-    animator->Play("Walk");
-    if (target && (target->transform.position - gameObject->transform.position).Magnitude() <= attackRange) {
+    if (!target) {
+        return;
+    }
+
+    Vector2 distance = target->transform.position - gameObject->transform.position;
+    
+    if (distance.Magnitude() > RANGED_DETECT_RANGE){
+        return;
+    }
+
+    if (distance.Magnitude() <= attackRange) {
         if (SDL_GetTicks() - lastAttackTime >= attackCooldown) {
             Attack();
         }

@@ -36,6 +36,11 @@ void Rigidbody2D::AddForce(Vector2 force) {
     this->acceleration += force / this->mass;
 }
 
+void Rigidbody2D::RemoveAllForce(){
+    this->acceleration = Vector2(0, 0);
+    this->velocity = Vector2(0, 0); 
+}
+
 void Rigidbody2D::SetDrag(float drag) {
     this->drag = drag;
 }

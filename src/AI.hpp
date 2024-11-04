@@ -35,13 +35,12 @@ private:
     
     //Detection
     void Init();
+    bool isGrounded = false;
     bool wallDetected = false;
     bool floorDetected = false;
     BoxCollider2D *wallDetectionColl = nullptr;
     BoxCollider2D *cliffDetectionColl = nullptr;
     void ResetDetection();
-
-
 
 public:
     MeleeAI(GameObject *parent, float speed, float attackRange, float attackCooldown);

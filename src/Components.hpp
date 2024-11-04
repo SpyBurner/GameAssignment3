@@ -83,10 +83,16 @@ private:
     Vector2 lastNormal = Vector2(0, 0);
     void OnCollisionEnter(Collider2D *collider);
 
+    bool enableWallJump = false;
+
+    float initGravityScale = 1.0;
 public:
     JumpController(GameObject *parent, SDL_KeyCode jumpKey, float jumpForce, float cooldown, CollisionMatrix::Layer whatIsGround);
     void Update();
     void Draw();
+
+    void SetEnableWallJump(bool enableWallJump);
+
     void BindCollider(Collider2D *collider);
     Component *Clone(GameObject *parent);
 };
@@ -125,7 +131,7 @@ public:
     Component *Clone(GameObject *parent);
 };
 
-class PlayerShoot : public Component {
+class PlayerWeapon : public Component {
 private:
     std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell = nullptr;
     float shellSpeed = 0;
@@ -141,10 +147,21 @@ private:
 
     float lastHandOff = 0;
 public:
-    PlayerShoot(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick);
+    PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem);
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell);
     void Update();
     void Draw();
+    Component *Clone(GameObject *parent);
+};
+class ArsenalManager : public Component {
+private:
+    std::map<SDL_KeyCode, PlayerWeapon *> arsenal;
+    SDL_KeyCode currentWeaponKey;
+public:
+    ArsenalManager(GameObject *parent);
+    void Update();
+    void Draw();
+    void AddWeapon(PlayerWeapon *weapon, SDL_KeyCode key);
     Component *Clone(GameObject *parent);
 };
 
@@ -207,7 +224,14 @@ private:
     float invincibleTime = 0;
     float lastDamageTime = 0;
 
+    float stunTime = 0;
+    float lastStunTime = 0;
+
     ParticleSystem *particleSystem = nullptr;
+
+    std::vector<std::function<GameObject *(Vector2 position)>> dropFunctions;
+
+    void DropItem();
 public:
     Event<> OnDeath = Event<>();
     Event<> OnDamage = Event<>();
@@ -219,14 +243,71 @@ public:
     void TakeDamage(int damage);
     void Heal(int amount);
 
+    void AddDropFunction(std::function<GameObject *(Vector2 position)> dropFunction);
+
     void SetInvincible(bool invincible);
     void SetParticleSystem(ParticleSystem *particleSystem);
 
     int GetCurrentHP();
     int GetMaxHP();
 
+    void Stun(float time);
+    bool IsStunned();
+
     bool IsDead();
 
+    Component *Clone(GameObject *parent);
+};
+
+class CoinCollector : public Component {
+private:
+    int coinCount = 0;
+public:
+    CoinCollector(GameObject *parent);
+    void Update();
+    void Draw();
+    void AddCoin();
+    int GetCoinCount();
+    Component *Clone(GameObject *parent);
+};
+
+class DamageOnCollision : public Component {
+private:
+    int targetLayer = CollisionMatrix::DEFAULT;
+    int damage = 0;
+    bool destroyOnCollision = false;
+public:
+    DamageOnCollision(GameObject *parent, int damage, int targetLayer, bool destroyOnCollision);
+    void OnCollisionEnter(Collider2D *collider);
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
+};
+
+class PowerUp : public Component {
+private:
+    int targetLayer = CollisionMatrix::DEFAULT;
+
+    std::function<void(GameObject *)> powerUpFunction = nullptr;
+
+    int healAmount = 0;
+public: 
+    PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObject *)> powerUpFunction, int healAmout);
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
+};
+
+class PowerUpBox : public Component {
+private:
+    std::function<GameObject *(Vector2 position)> powerUpFunction = nullptr;
+public:
+    PowerUpBox(GameObject *parent, std::function<GameObject *(Vector2 position)> powerUpFunction);
+    
+    GameObject *GetPowerUp();
+
+    void Update();
+    void Draw();
     Component *Clone(GameObject *parent);
 };
 

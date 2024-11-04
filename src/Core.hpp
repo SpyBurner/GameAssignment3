@@ -28,6 +28,10 @@ public:
         CAMERA = 6,
         PARTICLE = 7,
         DETECTION = 8,
+        SPIKE = 9,
+        POWERUP = 10,
+        PUSHABLE = 11,
+        GATE = 12,
         DEFAULT = 0
     };
 
@@ -35,7 +39,6 @@ public:
     static bool checkCollisionMatrix(int a, int b);
     static void setCollisionMatrix(int a, int b, bool value);
 };
-
 
 // Event
 template <typename... Args>
