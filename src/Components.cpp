@@ -340,7 +340,7 @@ PlayerWeapon::PlayerWeapon(GameObject *parent, float shellSpeed, float shellLife
     this->shootAmount = shootAmount;
     this->shootAngle = shootAngle;
 
-    particleSystem = particleSystem;
+    this->particleSystem = particleSystem;
     this->joystick = joystick;
 }
 
@@ -377,8 +377,10 @@ void PlayerWeapon::Update() {
 
             // Rotate direction
             Vector2 direction = lastDirection;
-            if (shootAngle != 0)
+            if (fabs(shootAngle) > EPS){
+                std :: cout << "shootAngle: " << shootAngle << std::endl;
                 Vector2::Rotate(direction, (rand() % (int)shootAngle * 2 - (int)shootAngle));
+            }
 
             GameObject *shell = createShell(shellSpeed, direction, shellLifetime, gameObject->transform.position);
             shell->GetComponent<ShellBehavior>()->SetSender(gameObject);
@@ -704,7 +706,6 @@ PowerUp::PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObj
     this->targetLayer = targetLayer;
     this->powerUpFunction = powerUpFunction;
     this->healAmount = healAmount;
-    this->hpController = gameObject->GetComponent<HPController>();
 
     Collider2D *collider = gameObject->GetComponent<Collider2D>();
     if (collider) {
@@ -713,6 +714,7 @@ PowerUp::PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObj
                 if (this->powerUpFunction) {
                     this->powerUpFunction(collider->gameObject);
                 }
+                HPController *hpController = collider->gameObject->GetComponent<HPController>();
                 if (hpController) {
                     hpController->Heal(this->healAmount);
                 }

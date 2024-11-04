@@ -24,7 +24,7 @@ const bool FULLSCREEN = false;
 #define GRAVITY_ACCELERATION 9.8f  * 3 / FPS
 
 const int PLAYER_SPEED = 18;
-const int MELEE_SPEED = 4;
+const int MELEE_SPEED = 2;
 const int RANGED_SPEED = 1;
 
 

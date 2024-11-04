@@ -229,7 +229,7 @@ void Game::objectInit() {
             shell->AddComponent(new CircleCollider2D(shell, Vector2(0, 0),
                                                      5 * shell->transform.scale.x / 2, true));
             shell->GetComponent<CircleCollider2D>()->OnCollisionEnter.addHandler([shell](Collider2D *collider) {
-                if (collider->layer == CollisionMatrix::ENEMY) {
+                if (collider->layer == CollisionMatrix::ENEMY || collider->layer == CollisionMatrix::WALL) {
                     HPController *hpController = collider->gameObject->GetComponent<HPController>();
                     if (hpController) {
                         ShellBehavior *shellBehavior = shell->GetComponent<ShellBehavior>();
@@ -243,9 +243,9 @@ void Game::objectInit() {
 
                         hpController->TakeDamage(dmg);
                     }
+                    GameObjectManager::GetInstance()->RemoveGameObject(shell->GetName());
                 }
 
-                GameObjectManager::GetInstance()->RemoveGameObject(shell->GetName());
             });
 
             return shell;
@@ -388,6 +388,10 @@ void Game::objectInit() {
             playerHurtParticleSystem->Emit(5);
         });
 
+        player->GetComponent<HPController>()->OnHPChange.addHandler([player, playerHurtParticleSystem]() {
+            std::cout << "Player HP: " << player->GetComponent<HPController>()->GetCurrentHP() << std::endl;
+        });
+
 #pragma endregion
 
 #pragma region Gun Setup
@@ -452,7 +456,7 @@ void Game::objectInit() {
             if (collider->layer == CollisionMatrix::PLAYER) {
                 HPController *hpController = collider->gameObject->GetComponent<HPController>();
                 if (hpController)
-                    hpController->TakeDamage(MELEE_DAMAGE * 2);
+                    hpController->TakeDamage(MELEE_DAMAGE);
             }
         });
 

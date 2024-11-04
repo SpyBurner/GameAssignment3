@@ -269,7 +269,6 @@ class PowerUp : public Component {
 private:
     int targetLayer = CollisionMatrix::DEFAULT;
 
-    HPController *hpController = nullptr;
     std::function<void(GameObject *)> powerUpFunction = nullptr;
 
     int healAmount = 0;
