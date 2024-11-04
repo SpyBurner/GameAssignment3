@@ -109,6 +109,16 @@ void Game::objectInit() {
 
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::PLAYER, true);
     CollisionMatrix::setCollisionMatrix(CollisionMatrix::POWERUP, CollisionMatrix::WALL, true);
+
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::PLAYER, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::ENEMY, true);
+
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::WALL, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::PROJECTILE, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::E_PROJECTILE, true);
+
+    // CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::PARTICLE, true);
+    CollisionMatrix::setCollisionMatrix(CollisionMatrix::PUSHABLE, CollisionMatrix::DETECTION, true);
 #pragma endregion
 
     Scene *gameScene = new Scene("Game");
@@ -217,7 +227,7 @@ void Game::objectInit() {
 
             shell->AddComponent(new SpriteRenderer(shell, Vector2(5, 4), 10, LoadSpriteSheet("Assets/Sprites/Player/shell.png")));
 
-            shell->AddComponent(new ParticleSystem(shell, shellParticle, 50, 500, -1 * direction, 0, 0));
+            shell->AddComponent(new ParticleSystem(shell, shellParticle, 10, 500, -1 * direction, 0, 0));
 
             shell->AddComponent(new Rigidbody2D(shell, 1, 0.025, 0, 0.0));
             shell->AddComponent(new ShellBehavior(shell, lifeTime, speed, direction));
@@ -242,6 +252,12 @@ void Game::objectInit() {
                     }
                     GameObjectManager::GetInstance()->RemoveGameObject(shell->GetName());
                 }
+                if (collider->layer == CollisionMatrix::PUSHABLE){
+                    Rigidbody2D *rb = collider->gameObject->GetComponent<Rigidbody2D>();
+                    if (rb) {
+                        rb->AddForce(shell->GetComponent<Rigidbody2D>()->velocity.Normalize() * PLAYER_HOOK_FORCE / PLAYER_SHOTGUN_PELLET);
+                    }
+                }
 
             });
 
@@ -264,7 +280,7 @@ void Game::objectInit() {
 
             hook->AddComponent(new SpriteRenderer(hook, Vector2(16, 10), 10, LoadSpriteSheet("Assets/Sprites/Player/hook.png")));
 
-            hook->AddComponent(new ParticleSystem(hook, hookParticle, 20, 500, -1 * direction, 0, 0));
+            hook->AddComponent(new ParticleSystem(hook, hookParticle, 30, 500, -1 * direction, 0, 0));
 
             hook->AddComponent(new Rigidbody2D(hook, 1, 0.025, 0, 0.0));
             hook->AddComponent(new ShellBehavior(hook, lifeTime, speed, direction));
@@ -304,9 +320,9 @@ void Game::objectInit() {
 #pragma region Player Setup
         GameObject *player = new GameObject("Player");
         player->layer = CollisionMatrix::PLAYER;
-        //tile 10 8 for start
+        //tile 9 3 for start
         //tile 81 14 for boss room
-        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(10, 8);
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(9, 3);
         // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
@@ -344,7 +360,7 @@ void Game::objectInit() {
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT)));
 
         PlayerWeapon *shotgun = dynamic_cast<PlayerWeapon *>(
-            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, 5, 10, aimStick, shellDropPS))
+            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, PLAYER_SHOTGUN_PELLET, 10, aimStick, shellDropPS))
         );
         shotgun->setSpawnFunction(CreateShell);
 
@@ -408,7 +424,7 @@ void Game::objectInit() {
 
         camera->AddComponent(new BoxCollider2D(camera, Vector2(0, 0), Vector2(1280, 720), true));
         camera->AddComponent(new Rigidbody2D(camera, 1, 0.5, 0, 0.0));
-        camera->AddComponent(new Camera(camera, player, Vector2(1280, 720), Vector2(0, -70), 10, Vector2(50, 70)));
+        camera->AddComponent(new Camera(camera, player, Vector2(1280, 720), Vector2(0, -50), 10, Vector2(50, 70)));
 
         Game::CAMERA = camera;
 
@@ -453,6 +469,7 @@ void Game::objectInit() {
         return meleeProjectile;
     };
 
+
 #pragma endregion
 
 #pragma region Enemy hurt particle setup
@@ -467,7 +484,7 @@ void Game::objectInit() {
 
 #pragma region Melee setup
         auto CreateMelee = [player, CreateMeleeProjectile, enemyHurtParticle](Vector2 position){
-            GameObject *melee = new GameObject("Melee");
+            GameObject *melee = new GameObject("Melee" + std::to_string(rand() + rand()));
             melee->layer = CollisionMatrix::ENEMY;
             melee->transform.position = position;
             melee->transform.scale = Vector2(2, 2);
@@ -519,8 +536,24 @@ void Game::objectInit() {
 
             melee->GetComponent<MeleeAI>()->SetCreateAttack(CreateMeleeProjectile);
 
+            // melee->AddComponent(new PositionTracker(melee));
+
             return melee;
         };
+
+        GameObjectManager::GetInstance()->AddGameObject(CreateMelee(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(12, 7)
+        ));
+
+        GameObjectManager::GetInstance()->AddGameObject(CreateMelee(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 7)
+        ));
+
+        GameObjectManager::GetInstance()->AddGameObject(CreateMelee(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(30, 7)
+        ));
+
+
 #pragma endregion
 
 #pragma region Ranged projectile setup
@@ -536,7 +569,7 @@ void Game::objectInit() {
         
         rangedProjectile->AddComponent(new ShellBehavior(rangedProjectile, lifeTime, speed, direction));
 
-        rangedProjectile->AddComponent(new ParticleSystem(rangedProjectile, shellParticle, 50, 500, -1 * direction, 0, 0));
+        rangedProjectile->AddComponent(new ParticleSystem(rangedProjectile, shellParticle, 10, 500, -1 * direction, 0, 0));
 
         rangedProjectile->AddComponent(new CircleCollider2D(rangedProjectile, Vector2(0, 0), 3 * rangedProjectile->transform.scale.x / 2, true));
 
@@ -571,7 +604,6 @@ void Game::objectInit() {
             ranged->GetComponent<Animator>()->Play("Walk");
 
             ranged->AddComponent(new Rigidbody2D(ranged, 1, 0.025, 0.8, 0));
-            ranged->AddComponent(new VelocityToAnimSpeedController(ranged, "Walk"));
             ranged->AddComponent(new FLipToVelocity(ranged, Vector2(-1, 0)));
 
             // Physic collider
@@ -648,7 +680,8 @@ void Game::objectInit() {
 
             return heal;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(Vector2(1200, 100)));
+        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 8)));
+        GameObjectManager::GetInstance()->AddGameObject(CreateHeal(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(46, 4)));
 
         auto CreateHookUpgrade = [player, aimStick, CreateHook](Vector2 position){
             GameObject *hookUpgrade = new GameObject("HookUpgrade" + std::to_string(rand() + rand()));
@@ -685,13 +718,13 @@ void Game::objectInit() {
 
             return hookUpgrade;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateHookUpgrade(Vector2(900, 100)));
+        GameObjectManager::GetInstance()->AddGameObject(CreateHookUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8)));
 
-        auto CreateBootUpgrade = [player](Vector2 postion){
+        auto CreateBootUpgrade = [player](Vector2 position){
             GameObject *bootUpgrade = new GameObject("BootUpgrade" + std::to_string(rand() + rand()));
             bootUpgrade->layer = CollisionMatrix::POWERUP;
 
-            bootUpgrade->transform.position = postion;
+            bootUpgrade->transform.position = position;
             bootUpgrade->transform.scale = Vector2(3, 3);
 
             bootUpgrade->AddComponent(new SpriteRenderer(bootUpgrade, Vector2(13, 14), 5, LoadSpriteSheet("Assets/Sprites/Powerup/spikeboot.png")));
@@ -718,8 +751,65 @@ void Game::objectInit() {
 
             return bootUpgrade;
         };
-        GameObjectManager::GetInstance()->AddGameObject(CreateBootUpgrade(Vector2(1500, 100)));
+        GameObjectManager::GetInstance()->AddGameObject(CreateBootUpgrade(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(11, 4)));
+
+        auto CreateShield = [player](Vector2 position){
+            GameObject *shield = new GameObject("Shield" + std::to_string(rand() + rand()));
+            shield->layer = CollisionMatrix::POWERUP;
+
+            shield->transform.position = position;
+            shield->transform.scale = Vector2(2, 2);
+
+            shield->AddComponent(new SpriteRenderer(shield, Vector2(18, 18), 5, LoadSpriteSheet("Assets/Sprites/Powerup/shield.png")));
+            shield->AddComponent(new Rigidbody2D(shield, 1, 0.025, 0, 1.0));
+
+            // Trigger
+            shield->AddComponent(new BoxCollider2D(shield, Vector2(0, 0),
+                Vector2(18 * shield->transform.scale.x, 18 * shield->transform.scale.y), true));
+            
+            auto UnlockShield = [player](GameObject *player){
+                player->GetComponent<HPController>()->SetInvincible(true);
+                std::cout << "Shield unlocked" << std::endl;
+            };
+
+            shield->AddComponent(new PowerUp(shield, CollisionMatrix::PLAYER, UnlockShield, 0));
+
+            // Physic
+            BoxCollider2D *physCol = dynamic_cast<BoxCollider2D *>(
+                shield->AddComponent(new BoxCollider2D(shield, Vector2(0, 0),
+                    Vector2(18 * shield->transform.scale.x, 18 * shield->transform.scale.y), false))
+            );
+
+            physCol->layer = CollisionMatrix::PARTICLE;
+
+            return shield;
+        };
+        GameObjectManager::GetInstance()->AddGameObject(CreateShield(tilemap->GetComponent<Tilemap>()->GetPositionFromTile(10, 4)));
+
 #pragma endregion
+
+#pragma region Physic Box
+        auto CreateBox = [](float mass, Vector2 scale, Vector2 position){
+            GameObject *box = new GameObject("Box" + std::to_string(rand() + rand()));
+            box->layer = CollisionMatrix::WALL;
+            box->transform.position = position;
+            box->transform.scale = scale;
+
+            box->AddComponent(new SpriteRenderer(box, Vector2(16, 16), 5, LoadSpriteSheet("Assets/Sprites/Powerup/PhysicTile.png")));
+            box->AddComponent(new Rigidbody2D(box, mass, 0.025, 0.0, 1.0));
+
+            box->AddComponent(new BoxCollider2D(box, Vector2(0, 0),
+                Vector2(16 * box->transform.scale.x, 16 * box->transform.scale.y), false));
+            box->GetComponent<BoxCollider2D>()->layer = CollisionMatrix::PUSHABLE;
+
+            return box;
+        };
+
+        GameObjectManager::GetInstance()->AddGameObject(
+            CreateBox(25, Vector2(12, 12), tilemap->GetComponent<Tilemap>()->GetPositionFromTile(59, 4))
+        );
+#pragma endregion
+    
     });
 
     SceneManager::GetInstance()->AddScene(gameScene);

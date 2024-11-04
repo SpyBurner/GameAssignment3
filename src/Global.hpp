@@ -17,7 +17,7 @@ const int FPS = 60;
 const int WIDTH = 1280, HEIGHT = 720;
 // const int WIDTH = 1920, HEIGHT = 1080;
 
-const bool FULLSCREEN = false;
+const bool FULLSCREEN = true;
 
 #define VELOCITY_EPS 0.1f
 #define EPS 0.0001f
@@ -37,6 +37,7 @@ const float PLAYER_INVINCIBILITY_TIME = 1500;
 
 //x/y: Drops by x Dmg every y pixels traveled
 const double PLAYER_DMG_DROP = 1/120.0;
+const int PLAYER_SHOTGUN_PELLET = 5;
 
 const int PLAYER_DAMAGE = 3;
 const int MELEE_DAMAGE = 1;
@@ -54,6 +55,8 @@ const float MELEE_ATTACK_RANGE = 100;
 
 const float RANGED_PROJECTILE_LIFETIME = 3000;
 const float RANGED_PROJECTILE_SPEED = 10;
+const float RANGED_DETECT_RANGE = 700;
 const float RANGED_ATTACK_RANGE = 400;
 
+const float BOX_MAX_SPEED = 10;
 #endif // GLOBALS_HPP

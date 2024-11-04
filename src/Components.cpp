@@ -162,6 +162,9 @@ void MovementController::Update() {
 
     if (force.Magnitude() > VELOCITY_EPS) {
         rigidbody->AddForce(force);
+        if (fabs(rigidbody->velocity.x) > speed) {
+            rigidbody->velocity = Vector2( rigidbody->velocity.x / fabs(rigidbody->velocity.x) * speed , rigidbody->velocity.y);
+        }
     }
 }
 
@@ -188,6 +191,7 @@ void JumpController::OnCollisionEnter(Collider2D *collider) {
 
     if (SDL_GetTicks() - lastJumpTime < cooldown)
         return;
+    //Default jumpable on all PUSHABLE
     if (collider->gameObject->layer != groundLayer)
         return;
 
@@ -209,7 +213,6 @@ JumpController::JumpController(GameObject *parent, SDL_KeyCode jumpKey,
 
     this->groundLayer = whatIsGround;
 
-    this->rigidbody = this->gameObject->GetComponent<Rigidbody2D>();
 }
 
 void JumpController::Update() {
@@ -219,6 +222,7 @@ void JumpController::Update() {
         rigidbody = gameObject->GetComponent<Rigidbody2D>();
         if (rigidbody == nullptr)
             return;
+        initGravityScale = rigidbody->gravityScale;
     }
 
     if (SDL_GetTicks() - lastJumpTime < cooldown)
@@ -235,6 +239,12 @@ void JumpController::Update() {
             grounded = false;
             lastJumpTime = SDL_GetTicks();
         }
+    }
+    
+    if (!grounded && rigidbody->velocity.y > 0){
+        rigidbody->gravityScale = initGravityScale * 2;
+    } else {
+        rigidbody->gravityScale = initGravityScale;
     }
 }
 
@@ -370,8 +380,8 @@ void PlayerWeapon::Update() {
         lastHandOff = SDL_GetTicks();
     }
 
-    // 150 ms to aim before shooting
-    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 150) {
+    // 90 ms to aim before shooting
+    if (shoot && SDL_GetTicks() - lastShootTime > shootCooldown && SDL_GetTicks() - lastHandOff > 90) {
 
         for (int i = 0; i < shootAmount; i++) {
 

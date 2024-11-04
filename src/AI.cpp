@@ -218,7 +218,17 @@ void RangedAI::Update() {
         }
     }
 
-    if (target && (target->transform.position - gameObject->transform.position).Magnitude() <= attackRange) {
+    if (!target) {
+        return;
+    }
+
+    Vector2 distance = target->transform.position - gameObject->transform.position;
+    
+    if (distance.Magnitude() > RANGED_DETECT_RANGE){
+        return;
+    }
+
+    if (distance.Magnitude() <= attackRange) {
         if (SDL_GetTicks() - lastAttackTime >= attackCooldown) {
             Attack();
         }

@@ -84,6 +84,8 @@ private:
     void OnCollisionEnter(Collider2D *collider);
 
     bool enableWallJump = false;
+
+    float initGravityScale = 1.0;
 public:
     JumpController(GameObject *parent, SDL_KeyCode jumpKey, float jumpForce, float cooldown, CollisionMatrix::Layer whatIsGround);
     void Update();

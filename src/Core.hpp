@@ -30,6 +30,7 @@ public:
         DETECTION = 8,
         SPIKE = 9,
         POWERUP = 10,
+        PUSHABLE = 11,
         DEFAULT = 0
     };
 

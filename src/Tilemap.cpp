@@ -145,7 +145,7 @@ void Tilemap::BuildMap() {
 
             // Add a BoxCollider2D component to the tile
             tile->AddComponent(new BoxCollider2D(tile, Vector2(0, 0),
-                Vector2(tileSize.x * tile->transform.scale.x, tileSize.y * tile->transform.scale.y),
+                Vector2(tileSize.x * tile->transform.scale.x * (1 + 0.05) , tileSize.y * tile->transform.scale.y * (1 + 0.05)),
             !haveCollision));
 
             // Add a DamageOnCollision component to the tile
