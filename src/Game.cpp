@@ -88,11 +88,12 @@ void Game::objectInit() {
     //  SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/fairyfountain.mp3", 100);
     //  SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/papyrus.mp3", 32);
 
-    // SoundManager::GetInstance()->AddSound("ball_bounce", "Assets/SFX/ball_bounce.mp3", 128);
-    // SoundManager::GetInstance()->AddSound("ball_kick", "Assets/SFX/ball_kick.mp3", 128);
-
-    // SoundManager::GetInstance()->AddSound("Game_Over", "Assets/SFX/gameover.mp3", 128);
-    // SoundManager::GetInstance()->AddSound("Goal", "Assets/SFX/score.mp3", 64);
+    SoundManager::GetInstance()->AddSound("Jump", "Assets/SFX/jump.wav", 128);
+    SoundManager::GetInstance()->AddSound("Shotgun", "Assets/SFX/shotgun.wav", 128);
+    SoundManager::GetInstance()->AddSound("Pickup", "Assets/SFX/pickup.wav", 128);
+    SoundManager::GetInstance()->AddSound("Hurt", "Assets/SFX/hurt.wav", 128);
+    SoundManager::GetInstance()->AddSound("HookShoot", "Assets/SFX/hookshoot.wav", 128);
+    SoundManager::GetInstance()->AddSound("GameOver", "Assets/SFX/gameover.wav", 128);
 
 #pragma region Collision Matrix
     CollisionMatrix::init();
@@ -482,7 +483,7 @@ void Game::objectInit() {
         player->layer = CollisionMatrix::PLAYER;
         //tile 9 3 for start
         //tile 88 13 for boss room
-        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13);
+        player->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(9, 3);
         // player->transform.position = Vector2(640, 360);
         player->transform.scale = Vector2(2, 2);
 
@@ -520,7 +521,7 @@ void Game::objectInit() {
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT)));
 
         PlayerWeapon *shotgun = dynamic_cast<PlayerWeapon *>(
-            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, PLAYER_SHOTGUN_PELLET, 10, aimStick, shellDropPS))
+            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, PLAYER_SHOTGUN_PELLET, 10, aimStick, shellDropPS, "Shotgun"))
         );
         shotgun->setSpawnFunction(CreateShell);
 
@@ -578,6 +579,10 @@ void Game::objectInit() {
         player->GetComponent<HPController>()->OnDeath.addHandler([gun]() {
             gun->AddComponent(new AutoDestroy(gun, 5000));
             gun->AddComponent(new CircleCollider2D(gun, Vector2(0, 0), 8, true));
+            gun->AddComponent(new Rigidbody2D(gun, 1, 0.025, 0, 1.0));
+
+            gun->GetComponent<Rigidbody2D>()->AddForce(Vector2(0, -1) * POWER_UP_POP_UP_FORCE);
+            gun->GetComponent<Orbit>()->enabled = false;
         });
 
         GameObjectManager::GetInstance()->AddGameObject(gun);
@@ -647,7 +652,7 @@ void Game::objectInit() {
             
             auto UnlockHook = [aimStick, CreateHook](GameObject *player){
                 PlayerWeapon *meatHook = dynamic_cast<PlayerWeapon *>(
-                    player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr))
+                    player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr, "HookShoot"))
                 );
                 meatHook->setSpawnFunction(CreateHook);
                 player->GetComponent<ArsenalManager>()->AddWeapon(meatHook, SDLK_2);
@@ -1240,6 +1245,38 @@ void Game::objectInit() {
     });
     SceneManager::GetInstance()->AddScene(gameScene);
 #endif
+
+    // Game Over Scene
+    Scene *gameOverScene = new Scene("GameOver");
+    gameOverScene->AssignLogic([gameOverScene, this]() {
+        Game::state = GAMEOVER;
+
+        SoundManager::GetInstance()->PlaySound("GameOver");
+
+        GameObject *gameOver = new GameObject("GameOver");
+        
+        gameOver->AddComponent(new TextRenderer(gameOver, "Game Over", SDL_Color{255, 255, 255, 255}, 60, "Assets/Fonts/arial.ttf"));
+
+        GameObjectManager::GetInstance()->AddGameObject(gameOver);
+
+        GameObject *quitButton = new GameObject("QuitButton");
+        quitButton->transform.scale = Vector2(2, 2);
+
+        quitButton->transform.position = Vector2(1280 - 32 * 2 / 2, 32 * 2 / 2);
+
+        quitButton->AddComponent(new SpriteRenderer(quitButton, Vector2(32, 32), 0, LoadSpriteSheet("Assets/Sprites/Menu/Quit_button.png")));
+
+        quitButton->AddComponent(new BoxCollider2D(quitButton, Vector2(0, 0), 
+            Vector2(32 * quitButton->transform.scale.x, 32 * quitButton->transform.scale.y)
+        ,true));
+
+        quitButton->AddComponent(new Button(quitButton));
+        quitButton->GetComponent<Button>()->AddOnClickHandler([this](){
+                Game::state = MENU;
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(quitButton);
+    });
 
     SceneManager::GetInstance()->LoadScene("Menu");
 }

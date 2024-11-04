@@ -235,6 +235,8 @@ void JumpController::Update() {
 
             grounded = false;
             lastJumpTime = SDL_GetTicks();
+
+            SoundManager::GetInstance()->PlaySound("Jump");
         }
     }
     
@@ -339,7 +341,7 @@ call setSpawnFunction to set the function that will create the shell
 */
 
 PlayerWeapon::PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown,
-                         float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem) : Component(parent) {
+                         float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem, std::string sfx) : Component(parent) {
     this->shellSpeed = shellSpeed;
     this->shellLifetime = shellLifeTime;
 
@@ -349,6 +351,8 @@ PlayerWeapon::PlayerWeapon(GameObject *parent, float shellSpeed, float shellLife
 
     this->particleSystem = particleSystem;
     this->joystick = joystick;
+
+    this->sfx = sfx;
 }
 
 void PlayerWeapon::setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell) {
@@ -399,6 +403,9 @@ void PlayerWeapon::Update() {
         if (particleSystem) {
             particleSystem->Emit(1);
         }
+
+        if (sfx != "")
+            SoundManager::GetInstance()->PlaySound(sfx);
     }
 }
 
@@ -455,7 +462,7 @@ Orbit::Orbit(GameObject *parent, GameObject *target, float radius, Vector2 origi
 }
 
 void Orbit::Update() {
-    if (target == nullptr)
+    if (target == nullptr || !enabled)
         return;
 
     if (joystick == nullptr) {
@@ -631,6 +638,7 @@ void HPController::TakeDamage(int damage) {
     if (!isInvincible)
         currentHP -= damage;
 
+    SoundManager::GetInstance()->PlaySound("Hurt");
     OnDamage.raise();
     OnHPChange.raise();
 
@@ -766,6 +774,8 @@ PowerUp::PowerUp(GameObject *parent, int targetLayer, std::function<void(GameObj
                     hpController->Heal(this->healAmount);
                 }
                 GameObject::Destroy(gameObject->GetName());
+
+                SoundManager::GetInstance()->PlaySound("Pickup");
             }
         });
     } else {

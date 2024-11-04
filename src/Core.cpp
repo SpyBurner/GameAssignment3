@@ -758,7 +758,7 @@ void SoundManager::PlayMusic(std::string name, int loops) {
         }
         
         currentMusic = name;
-        Mix_VolumeMusic(musicVolumes[name]);
+        Mix_VolumeMusic(musicVolumes[name] * musicVolume / 128);
         Mix_PlayMusic(it->second, loops);
     } else {
         std::cerr << "Music not found: " << name << std::endl;
@@ -769,7 +769,7 @@ void SoundManager::PlaySound(std::string name, int loops) {
     auto it = sounds.find(name);
     if (it != sounds.end()) {
 
-        Mix_Volume(-1, soundVolumes[name]);
+        Mix_Volume(-1, soundVolumes[name] * sfxVolume / 128);
         Mix_PlayChannel(-1, it->second, loops);
         
     } else {

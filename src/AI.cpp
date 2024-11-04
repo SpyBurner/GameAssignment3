@@ -351,6 +351,7 @@ void MoaiAI::Update() {
     if (!target) {
         return;
     }
+    
     if (state == WALK) {
         Vector2 distance = target->transform.position - gameObject->transform.position;
 

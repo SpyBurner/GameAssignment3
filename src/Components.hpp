@@ -146,8 +146,10 @@ private:
     Joystick *joystick = nullptr;
 
     float lastHandOff = 0;
+
+     std::string sfx = "";
 public:
-    PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem);
+    PlayerWeapon(GameObject *parent, float shellSpeed, float shellLifeTime, float shootCooldown, float shootAmount, float shootAngle, Joystick *joystick, ParticleSystem *particleSystem, std::string sfx = "");
     void setSpawnFunction(std::function<GameObject *(float speed, Vector2 direction, float lifeTime, Vector2 position)> createShell);
     void Update();
     void Draw();
