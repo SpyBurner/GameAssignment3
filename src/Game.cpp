@@ -1000,23 +1000,29 @@ void Game::handleEvents() {
     //     state = GAMEOVER;
     //     return;
     // }
+    if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+            state = RELOAD;
+            return;
+        }
+    }
 }
 
 void Game::handleSceneChange() {
-    // switch (state) {
+    switch (state) {
     // case MENU:
     //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "MainMenu")
     //         SceneManager::GetInstance()->LoadScene("MainMenu");
     //     break;
-    // case GAME:
-    //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")
-    //         SceneManager::GetInstance()->LoadScene("Game");
-    //     break;
+    case RELOAD:
+            SceneManager::GetInstance()->LoadScene("Game");
+        break;
     // case GAMEOVER:
     //     if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "GameOver")
     //         SceneManager::GetInstance()->LoadScene("GameOver");
     //     break;
-    // }
+    }
+
 }
 
 void Game::update() {

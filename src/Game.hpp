@@ -12,7 +12,8 @@ public:
     enum State{
         MENU,
         GAME,
-        GAMEOVER
+        GAMEOVER,
+        RELOAD
     };
 
     State state = MENU;
