@@ -330,6 +330,22 @@ public:
     Component *Clone(GameObject *parent);
 };
 
+class TextRenderer : public Component {
+private:
+    std::string text;
+    SDL_Texture *texture = nullptr;
+    SDL_Color color;
+    int fontSize;
+    std::string fontPath;
+    bool needUpdate = true;
+public:
+    TextRenderer(GameObject *parent, std::string text, SDL_Color color, int fontSize, std::string fontPath);
+    ~TextRenderer();
+    void Update();
+    void Draw();
+    void SetText(std::string text);
+    Component *Clone(GameObject *parent);
+};
 
 
 #endif

@@ -16,6 +16,8 @@
 SDL_Event Game::event;
 GameObject *Game::CAMERA = nullptr;
 
+// #define MENU_DEBUG 1
+
 Game::Game() {
     isRunning = false;
 }
@@ -200,6 +202,143 @@ void Game::objectInit() {
     });
     SceneManager::GetInstance()->AddScene(menuScene);
 
+    Scene *optionScene = new Scene("Option");
+    optionScene->AssignLogic([optionScene, this]() {
+        Game::state = OPTION;
+#pragma region Music Volume
+        GameObject *musicLabel = new GameObject("MusicLabel");
+        musicLabel->transform.position = Vector2(640, 100);
+        musicLabel->transform.scale = Vector2(5, 5);
+
+        musicLabel->AddComponent(new TextRenderer(musicLabel, "Music Volume", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *musicText = new GameObject("MusicText");
+        musicText->transform.position = Vector2(650, 250);
+        musicText->transform.scale = Vector2(5, 5);
+
+        musicText->AddComponent(new TextRenderer(musicText, std::to_string(musicVolume), SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *musicUpButton = new GameObject("MusicUpButton");
+        musicUpButton->transform.position = Vector2(800, 250);
+        musicUpButton->transform.scale = Vector2(5, 5);
+
+        musicUpButton->AddComponent(new SpriteRenderer(musicUpButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/right_button.png")));
+
+        musicUpButton->AddComponent(new BoxCollider2D(musicUpButton, Vector2(0, 0), 
+            Vector2(16 * musicUpButton->transform.scale.x, 16 * musicUpButton->transform.scale.y),
+        true));
+
+        musicUpButton->AddComponent(new Button(musicUpButton));
+
+        musicUpButton->GetComponent<Button>()->AddOnClickHandler([musicText]() {
+            musicVolume = std::min(128, musicVolume + 10);
+            Mix_VolumeMusic(musicVolume);
+            musicText->GetComponent<TextRenderer>()->SetText(std::to_string(musicVolume));
+        });
+
+        GameObject *musicDownButton = new GameObject("MusicDownButton");
+
+        musicDownButton->transform.position = Vector2(500, 250);
+        musicDownButton->transform.scale = Vector2(5, 5);
+
+        musicDownButton->AddComponent(new SpriteRenderer(musicDownButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/left_button.png")));
+
+        musicDownButton->AddComponent(new BoxCollider2D(musicDownButton, Vector2(0, 0), 
+            Vector2(16 * musicDownButton->transform.scale.x, 16 * musicDownButton->transform.scale.y),
+        true));
+
+        musicDownButton->AddComponent(new Button(musicDownButton));
+
+        musicDownButton->GetComponent<Button>()->AddOnClickHandler([musicText]() {
+            musicVolume = std::max(0, musicVolume - 10);
+            Mix_VolumeMusic(musicVolume);
+            musicText->GetComponent<TextRenderer>()->SetText(std::to_string(musicVolume));
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(musicLabel);
+        GameObjectManager::GetInstance()->AddGameObject(musicText);
+        GameObjectManager::GetInstance()->AddGameObject(musicUpButton);
+        GameObjectManager::GetInstance()->AddGameObject(musicDownButton);
+#pragma endregion
+
+#pragma region SFX volume
+        GameObject *sfxLabel = new GameObject("SFXLabel");
+        sfxLabel->transform.position = Vector2(640, 500);
+        sfxLabel->transform.scale = Vector2(5, 5);
+
+        sfxLabel->AddComponent(new TextRenderer(sfxLabel, "SFX Volume", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *sfxText = new GameObject("SFXText");
+        sfxText->transform.position = Vector2(650, 650);
+        sfxText->transform.scale = Vector2(5, 5);
+
+        sfxText->AddComponent(new TextRenderer(sfxText, std::to_string(sfxVolume), SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *sfxUpButton = new GameObject("SFXUpButton");
+        sfxUpButton->transform.position = Vector2(800, 650);
+        sfxUpButton->transform.scale = Vector2(5, 5);
+
+        sfxUpButton->AddComponent(new SpriteRenderer(sfxUpButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/right_button.png")));
+
+        sfxUpButton->AddComponent(new BoxCollider2D(sfxUpButton, Vector2(0, 0), 
+            Vector2(16 * sfxUpButton->transform.scale.x, 16 * sfxUpButton->transform.scale.y),
+        true));
+
+        sfxUpButton->AddComponent(new Button(sfxUpButton));
+
+        sfxUpButton->GetComponent<Button>()->AddOnClickHandler([sfxText]() {
+            sfxVolume = std::min(128, sfxVolume + 10);
+            Mix_Volume(-1, sfxVolume);
+            sfxText->GetComponent<TextRenderer>()->SetText(std::to_string(sfxVolume));
+        });
+
+        GameObject *sfxDownButton = new GameObject("SFXDownButton");
+
+        sfxDownButton->transform.position = Vector2(500, 650);
+        sfxDownButton->transform.scale = Vector2(5, 5);
+
+        sfxDownButton->AddComponent(new SpriteRenderer(sfxDownButton, Vector2(16, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/left_button.png")));
+
+        sfxDownButton->AddComponent(new BoxCollider2D(sfxDownButton, Vector2(0, 0), 
+            Vector2(16 * sfxDownButton->transform.scale.x, 16 * sfxDownButton->transform.scale.y),
+        true));
+
+        sfxDownButton->AddComponent(new Button(sfxDownButton));
+
+        sfxDownButton->GetComponent<Button>()->AddOnClickHandler([sfxText]() {
+            sfxVolume = std::max(0, sfxVolume - 10);
+            Mix_Volume(-1, sfxVolume);
+            sfxText->GetComponent<TextRenderer>()->SetText(std::to_string(sfxVolume));
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(sfxLabel);
+        GameObjectManager::GetInstance()->AddGameObject(sfxText);
+        GameObjectManager::GetInstance()->AddGameObject(sfxUpButton);
+        GameObjectManager::GetInstance()->AddGameObject(sfxDownButton);
+#pragma endregion
+        
+        GameObject *quitButton = new GameObject("QuitButton");
+        quitButton->transform.scale = Vector2(2, 2);
+
+        quitButton->transform.position = Vector2(1280 - 32 * 2 / 2, 32 * 2 / 2);
+
+        quitButton->AddComponent(new SpriteRenderer(quitButton, Vector2(32, 32), 0, LoadSpriteSheet("Assets/Sprites/Menu/Quit_button.png")));
+
+        quitButton->AddComponent(new BoxCollider2D(quitButton, Vector2(0, 0), 
+            Vector2(32 * quitButton->transform.scale.x, 32 * quitButton->transform.scale.y)
+        ,true));
+
+        quitButton->AddComponent(new Button(quitButton));
+        quitButton->GetComponent<Button>()->AddOnClickHandler([this](){
+                Game::state = MENU;
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(quitButton);
+
+    });
+    SceneManager::GetInstance()->AddScene(optionScene);
+
+#ifndef MENU_DEBUG
     Scene *gameScene = new Scene("Game");
     gameScene->AssignLogic([gameScene, this]() {
         Game::state = GAME;
@@ -1099,9 +1238,8 @@ void Game::objectInit() {
 #pragma endregion
 
     });
-
-
     SceneManager::GetInstance()->AddScene(gameScene);
+#endif
 
     SceneManager::GetInstance()->LoadScene("Menu");
 }
@@ -1115,26 +1253,23 @@ void Game::handleEvents() {
         return;
     }
 
-    // if (event.type == SDL_KEYDOWN) {
-    //     if (event.key.keysym.sym == SDLK_ESCAPE) {
-    //         state = MENU;
-    //         scoreTeam1 = scoreTeam2 = 0;
-    //         return;
-    //     }
-    // }
-
-    // //End condition
-    // if (scoreTeam1 + scoreTeam2 >= 5) {
-    //     state = GAMEOVER;
-    //     return;
-    // }
+    if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+            state = MENU;
+            return;
+        }
+    }
 }
 
 void Game::handleSceneChange() {
     switch (state) {
     case MENU:
-        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "MainMenu")
-            SceneManager::GetInstance()->LoadScene("MainMenu");
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Menu")
+            SceneManager::GetInstance()->LoadScene("Menu");
+        break;
+    case OPTION:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Option")
+            SceneManager::GetInstance()->LoadScene("Option");
         break;
     case GAME:
         if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Game")

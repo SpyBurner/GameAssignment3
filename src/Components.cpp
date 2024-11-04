@@ -833,3 +833,68 @@ Component *Button::Clone(GameObject *parent) {
     newButton->onClick = onClick;
     return newButton;
 }
+
+TextRenderer::TextRenderer(GameObject *parent, std::string text, SDL_Color color, int fontSize, std::string fontPath) 
+    : Component(parent), text(text), color(color), fontSize(fontSize), fontPath(fontPath) {
+    // Load font and create texture
+    TTF_Font *font = TTF_OpenFont(fontPath.c_str(), fontSize);
+    if (font) {
+        SDL_Surface *surface = TTF_RenderText_Solid(font, text.c_str(), color);
+        if (surface) {
+            texture = SDL_CreateTextureFromSurface(RENDERER, surface);
+            SDL_FreeSurface(surface);
+        }
+        TTF_CloseFont(font);
+    }
+}
+
+TextRenderer::~TextRenderer() {
+    if (texture) {
+        SDL_DestroyTexture(texture);
+    }
+}
+
+void TextRenderer::Update() {
+    if (needUpdate) {
+        if (texture) {
+            SDL_DestroyTexture(texture);
+        }
+        TTF_Font *font = TTF_OpenFont(fontPath.c_str(), fontSize * gameObject->transform.scale.y);
+        if (font) {
+            SDL_Surface *surface = TTF_RenderText_Solid(font, text.c_str(), color);
+            if (surface) {
+                texture = SDL_CreateTextureFromSurface(RENDERER, surface);
+                SDL_FreeSurface(surface);
+            }
+            TTF_CloseFont(font);
+        }
+        needUpdate = false;
+    }
+}
+
+void TextRenderer::Draw() {
+    if (texture) {
+        SDL_Rect destRect;
+        destRect.x = gameObject->transform.position.x;
+        destRect.y = gameObject->transform.position.y;
+        destRect.w = 0;
+        destRect.h = 0;
+
+        SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
+        SDL_QueryTexture(texture, nullptr, nullptr, &destRect.w, &destRect.h);
+
+        destRect.x -= destRect.w / 2;
+        destRect.y -= destRect.h / 2;
+
+        SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
+    }
+}
+
+void TextRenderer::SetText(std::string newText) {
+    text = newText;
+    needUpdate = true;
+}
+
+Component *TextRenderer::Clone(GameObject *parent) {
+    return new TextRenderer(parent, text, color, fontSize, fontPath);
+}

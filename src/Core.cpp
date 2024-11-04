@@ -19,7 +19,8 @@ SoundManager *SoundManager::instance = nullptr;
 SDL_Renderer *RENDERER = nullptr;
 std::vector<SDL_Texture *> TEXTURES;
 int spawnID = 0;
-
+int musicVolume = 128;
+int sfxVolume = 128;
 //
 
 #pragma region Vector2

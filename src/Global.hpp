@@ -12,6 +12,9 @@ extern SDL_Renderer* RENDERER;
 extern std::vector<SDL_Texture *> TEXTURES;
 extern int spawnID;
 
+extern int musicVolume;
+extern int sfxVolume;
+
 //SETTINGS
 const int FPS = 60;
 
