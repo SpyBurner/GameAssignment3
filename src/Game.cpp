@@ -1268,7 +1268,7 @@ void Game::objectInit() {
 
 #pragma region UI
         GameObject *coinUI = new GameObject("CoinUI");
-        coinUI->transform.position = Game::CAMERA->transform.position + Vector2(- WIDTH / 2 + 100, - HEIGHT / 2 + 20);
+        coinUI->transform.position = Game::CAMERA->transform.position + Vector2(- WIDTH / 2 + 50, - HEIGHT / 2 + 20);
         coinUI->transform.scale = Vector2(2, 2);
 
         //Dummy sprite
