@@ -364,7 +364,7 @@ void Game::objectInit() {
         Game::state = ABOUT;
         SoundManager::GetInstance()->PlayMusic("MenuBgm");
         GameObject *aboutLabel = new GameObject("AboutLabel");
-        aboutLabel->transform.position = Vector2(640, 1000);
+        aboutLabel->transform.position = Vector2(640, 850);
         aboutLabel->transform.scale = Vector2(5, 5);
 
         aboutLabel->AddComponent(new TextRenderer(aboutLabel, "About", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
@@ -372,14 +372,14 @@ void Game::objectInit() {
         aboutLabel->AddComponent(new Scroll(aboutLabel, Vector2(0, -1), 1));
 
         GameObject *aboutText = new GameObject("AboutText");
-        aboutText->transform.position = Vector2(640, 1200);
+        aboutText->transform.position = Vector2(640, 1050);
         aboutText->transform.scale = Vector2(5, 5);
 
         aboutText->AddComponent(new TextRenderer(aboutText, "This is a game made by team 10", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
         aboutText->AddComponent(new Scroll(aboutText, Vector2(0, -1), 1));
 
         GameObject *special = new GameObject("SpecialText");
-        special->transform.position = Vector2(640, 1400);
+        special->transform.position = Vector2(640, 1250);
         special->transform.scale = Vector2(5, 5);
 
         special->AddComponent(new TextRenderer(special, "Special thanks to TTKL for emotional support", SDL_Color{255, 255, 255, 255}, 6, "Assets/Fonts/arial.ttf"));
@@ -960,9 +960,9 @@ void Game::objectInit() {
             tilemap->GetComponent<Tilemap>()->GetPositionFromTile(60, 4), CreateShield
         ));
         
-        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateShield
-        ));
+        // GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+        //     tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateShield
+        // ));
 #pragma endregion
 
 #pragma region Physic Box
@@ -1390,6 +1390,59 @@ void Game::objectInit() {
         HPBar->AddComponent(new BindToCamera(HPBar, Vector2(- WIDTH / 2 + 70, - HEIGHT / 2 + 20)));
 
         GameObjectManager::GetInstance()->AddGameObject(HPBar);
+
+#pragma endregion
+
+#pragma region Tutorial
+        GameObject *moveTutorial = new GameObject("MoveTutorial");
+        moveTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(4, 4);
+        moveTutorial->AddComponent(new TextRenderer(moveTutorial, "Use WASD to move, space to jump", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(moveTutorial);
+
+        GameObject *shootTutorial = new GameObject("ShootTutorial");
+        shootTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(4, 5);
+        shootTutorial->AddComponent(new TextRenderer(shootTutorial, "Use arrow keys to aim and shoot", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(shootTutorial);
+
+        GameObject *powerupTutorial = new GameObject("PowerupTutorial");
+        powerupTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(4, 6);
+        powerupTutorial->AddComponent(new TextRenderer(powerupTutorial, "Break [?] boxes to earn powerups", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(powerupTutorial);
+
+        GameObject *enemyTutorial = new GameObject("EnemyTutorial");
+        enemyTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(12, 10);
+        enemyTutorial->AddComponent(new TextRenderer(enemyTutorial, "Defeat enemies to collect drop", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(enemyTutorial);
+
+        GameObject *heartTutorial = new GameObject("HeartTutorial");
+        heartTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 6);
+        heartTutorial->AddComponent(new TextRenderer(heartTutorial, "Hearts heal your body, not your maidenless soul", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(heartTutorial);
+
+        GameObject *hookTutorial = new GameObject("HookTutorial");
+        hookTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(29, 4);
+        hookTutorial->AddComponent(new TextRenderer(hookTutorial, "Try the hook on everything ;). Press 2 to activate hook, 1 for shotgun", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(hookTutorial);
+
+        GameObject *bootTutorial = new GameObject("BootTutorial");
+        bootTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(51, 10);
+        bootTutorial->AddComponent(new TextRenderer(bootTutorial, "Perhaps you need something to step up this wall.", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(bootTutorial);
+
+        GameObject *bootTutorial2 = new GameObject("BootTutorial2");
+        bootTutorial2->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(51, 11);
+        bootTutorial2->AddComponent(new TextRenderer(bootTutorial2, "Like pressing jump on it?", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(bootTutorial2);
+
+        GameObject *shieldTutorial = new GameObject("ShieldTutorial");
+        shieldTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(59, 4);
+        shieldTutorial->AddComponent(new TextRenderer(shieldTutorial, "Shield blocks all damage infinitely, only use if you weakass cannot beat the incoming foe", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(shieldTutorial);
+
+        GameObject *gateTutorial = new GameObject("GateTutorial");
+        gateTutorial->transform.position = tilemap->GetComponent<Tilemap>()->GetPositionFromTile(78, 8);
+        gateTutorial->AddComponent(new TextRenderer(gateTutorial, "Have your mom taught you to use doors?", SDL_Color{255, 255, 255, 255}, 18, "Assets/Fonts/arial.ttf"));
+        GameObjectManager::GetInstance()->AddGameObject(gateTutorial);
 
 #pragma endregion
 
