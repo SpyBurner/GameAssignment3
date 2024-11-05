@@ -942,3 +942,19 @@ Component *BindToCamera::Clone(GameObject *parent){
     BindToCamera *newBindToCamera = new BindToCamera(parent, offset);
     return newBindToCamera;
 }
+
+
+Scroll::Scroll(GameObject *parent, Vector2 direction, float speed) : Component(parent){
+    this->direction = direction;
+    this->speed = speed;
+}
+void Scroll::Update(){
+    gameObject->transform.position += direction * speed;
+}
+void Scroll::Draw(){
+
+}
+Component *Scroll::Clone(GameObject *parent){
+
+}
+

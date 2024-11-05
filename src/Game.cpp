@@ -364,22 +364,33 @@ void Game::objectInit() {
         Game::state = ABOUT;
         SoundManager::GetInstance()->PlayMusic("MenuBgm");
         GameObject *aboutLabel = new GameObject("AboutLabel");
-        aboutLabel->transform.position = Vector2(640, 200);
+        aboutLabel->transform.position = Vector2(640, 1000);
         aboutLabel->transform.scale = Vector2(5, 5);
 
         aboutLabel->AddComponent(new TextRenderer(aboutLabel, "About", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
 
+        aboutLabel->AddComponent(new Scroll(aboutLabel, Vector2(0, -1), 1));
+
         GameObject *aboutText = new GameObject("AboutText");
-        aboutText->transform.position = Vector2(640, 400);
+        aboutText->transform.position = Vector2(640, 1200);
         aboutText->transform.scale = Vector2(5, 5);
 
         aboutText->AddComponent(new TextRenderer(aboutText, "This is a game made by team 10", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+        aboutText->AddComponent(new Scroll(aboutText, Vector2(0, -1), 1));
 
         GameObject *special = new GameObject("SpecialText");
-        special->transform.position = Vector2(640, 600);
+        special->transform.position = Vector2(640, 1400);
         special->transform.scale = Vector2(5, 5);
 
         special->AddComponent(new TextRenderer(special, "Special thanks to TTKL for emotional support", SDL_Color{255, 255, 255, 255}, 6, "Assets/Fonts/arial.ttf"));
+        special->AddComponent(new Scroll(special, Vector2(0, -1), 1));
+
+        GameObject *didYou = new GameObject("SpecialText");
+        didYou->transform.position = Vector2(640, 2000);
+        didYou->transform.scale = Vector2(5, 5);
+
+        didYou->AddComponent(new TextRenderer(didYou, "Did you expect this to be long?!?", SDL_Color{255, 255, 255, 255}, 6, "Assets/Fonts/arial.ttf"));
+        didYou->AddComponent(new Scroll(didYou, Vector2(0, -1), 1));
 
         GameObject *quitButton = new GameObject("QuitButton");
         quitButton->transform.scale = Vector2(2, 2);
@@ -402,6 +413,7 @@ void Game::objectInit() {
         GameObjectManager::GetInstance()->AddGameObject(aboutLabel);
         GameObjectManager::GetInstance()->AddGameObject(aboutText);
         GameObjectManager::GetInstance()->AddGameObject(special);
+        GameObjectManager::GetInstance()->AddGameObject(didYou);
     });
     SceneManager::GetInstance()->AddScene(aboutScene);
 

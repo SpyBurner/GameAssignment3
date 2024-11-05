@@ -360,4 +360,16 @@ public:
     Component *Clone(GameObject *parent);
 };
 
+class Scroll : public Component {
+private:
+    Vector2 direction;
+    float speed = 0;
+public:
+    Scroll(GameObject *parent, Vector2 direction, float speed);
+    void Update();
+    void Draw();
+    Component *Clone(GameObject *parent);
+};
+
+
 #endif
