@@ -888,16 +888,33 @@ void TextRenderer::Draw() {
         SDL_Rect destRect;
         destRect.x = gameObject->transform.position.x;
         destRect.y = gameObject->transform.position.y;
-        destRect.w = 0;
-        destRect.h = 0;
 
-        SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
+        // Query the texture to get its width and height
         SDL_QueryTexture(texture, nullptr, nullptr, &destRect.w, &destRect.h);
 
+        // Adjust the position to center the text
         destRect.x -= destRect.w / 2;
         destRect.y -= destRect.h / 2;
 
+        if (Game::CAMERA) {
+            SDL_Rect drawCheckRect;
+            drawCheckRect.x = gameObject->transform.position.x - destRect.w / 2;
+            drawCheckRect.y = gameObject->transform.position.y - destRect.h / 2;
+            drawCheckRect.w = destRect.w;
+            drawCheckRect.h = destRect.h;
+
+            if (!Game::CAMERA->GetComponent<Collider2D>()->CheckCollision(drawCheckRect)) {
+                return;
+            }
+
+            Vector2 newPos = Game::CAMERA->GetComponent<Camera>()->WorldToScreen(Vector2(destRect.x, destRect.y));
+            destRect.x = newPos.x;
+            destRect.y = newPos.y;
+        }
+
+        // Render the texture
         SDL_RenderCopy(RENDERER, texture, nullptr, &destRect);
+
     }
 }
 
