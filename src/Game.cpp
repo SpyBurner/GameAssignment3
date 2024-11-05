@@ -581,9 +581,9 @@ void Game::objectInit() {
 
         player->AddComponent(new BoxCollider2D(player, Vector2(0, 0),
                                                Vector2(15 * player->transform.scale.x, 27 * player->transform.scale.y), false));
-
+ 
         ParticleSystem *shellDropPS = dynamic_cast<ParticleSystem *>(
-            player->AddComponent(new ParticleSystem(player, dropShellParticle, 1, 5000, Vector2(0, -1), 10, 10))
+            player->AddComponent(new ParticleSystem(player, dropShellParticle, 100, 5000, Vector2(0, -1), 10, 10))
         );
         shellDropPS->Stop();
 
