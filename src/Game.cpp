@@ -87,11 +87,16 @@ void Game::objectInit() {
     // Add sounds and music
     SoundManager::GetInstance();
     SoundManager::GetInstance()->AddSound("Jump", "Assets/SFX/jump.wav", 128);
+    SoundManager::GetInstance()->AddSound("Jump", "Assets/SFX/jump.wav", 128);
     SoundManager::GetInstance()->AddSound("Shotgun", "Assets/SFX/shotgun.wav", 128);
     SoundManager::GetInstance()->AddSound("Pickup", "Assets/SFX/pickup.wav", 128);
     SoundManager::GetInstance()->AddSound("Hurt", "Assets/SFX/hurt.wav", 128);
     SoundManager::GetInstance()->AddSound("HookShoot", "Assets/SFX/hookshoot.wav", 128);
     SoundManager::GetInstance()->AddSound("GameOver", "Assets/SFX/gameover.mp3", 128);
+
+    SoundManager::GetInstance()->AddMusic("GameBgm", "Assets/SFX/doom_gate.mp3", 128);
+    SoundManager::GetInstance()->AddMusic("BossBgm", "Assets/SFX/shawn.mp3", 128);
+    SoundManager::GetInstance()->AddMusic("MenuBgm", "Assets/SFX/stalks.mp3", 128);
 
 #pragma region Collision Matrix
     CollisionMatrix::init();
@@ -137,6 +142,7 @@ void Game::objectInit() {
 
     menuScene->AssignLogic([menuScene, this](){
         Game::state = MENU;
+        SoundManager::GetInstance()->PlayMusic("MenuBgm");
         GameObject *title = new GameObject("Title");
         title->transform.position = Vector2(640, 150);
         title->transform.scale = Vector2(3, 3);
@@ -219,6 +225,7 @@ void Game::objectInit() {
     Scene *optionScene = new Scene("Option");
     optionScene->AssignLogic([optionScene, this]() {
         Game::state = OPTION;
+        SoundManager::GetInstance()->PlayMusic("MenuBgm");
 #pragma region Music Volume
         GameObject *musicLabel = new GameObject("MusicLabel");
         musicLabel->transform.position = Vector2(640, 100);
@@ -355,6 +362,7 @@ void Game::objectInit() {
     Scene *aboutScene = new Scene("About");
     aboutScene->AssignLogic([aboutScene, this](){
         Game::state = ABOUT;
+        SoundManager::GetInstance()->PlayMusic("MenuBgm");
         GameObject *aboutLabel = new GameObject("AboutLabel");
         aboutLabel->transform.position = Vector2(640, 200);
         aboutLabel->transform.scale = Vector2(5, 5);
@@ -1381,6 +1389,7 @@ void Game::objectInit() {
     Scene *gameOverScene = new Scene("GameOver");
     gameOverScene->AssignLogic([gameOverScene, this]() {
         Game::state = GAMEOVER;
+        SoundManager::GetInstance()->PlayMusic("MenuBgm");
 
         SoundManager::GetInstance()->PlaySound("GameOver");
 

@@ -356,9 +356,11 @@ void MoaiAI::Update() {
         Vector2 distance = target->transform.position - gameObject->transform.position;
 
         if (distance.Magnitude() > alertRange) {
+            SoundManager::GetInstance()->PlayMusic("GameBgm");
             return;
         } 
 
+        SoundManager::GetInstance()->PlayMusic("BossBgm");
         if (distance.Magnitude() <= attackRange) {
             if (SDL_GetTicks() - lastAttackTime >= attackCooldown) {
                 state = ATTACK;
