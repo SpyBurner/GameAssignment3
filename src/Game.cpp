@@ -385,7 +385,7 @@ void Game::objectInit() {
         special->AddComponent(new TextRenderer(special, "Special thanks to TTKL for emotional support", SDL_Color{255, 255, 255, 255}, 6, "Assets/Fonts/arial.ttf"));
         special->AddComponent(new Scroll(special, Vector2(0, -1), 1));
 
-        GameObject *didYou = new GameObject("SpecialText");
+        GameObject *didYou = new GameObject("DidYou");
         didYou->transform.position = Vector2(640, 2000);
         didYou->transform.scale = Vector2(5, 5);
 
