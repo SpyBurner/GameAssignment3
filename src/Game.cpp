@@ -378,13 +378,6 @@ void Game::objectInit() {
         aboutText->AddComponent(new TextRenderer(aboutText, "This is a game made by team 10", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
         aboutText->AddComponent(new Scroll(aboutText, Vector2(0, -1), 1));
 
-        GameObject *special = new GameObject("SpecialText");
-        special->transform.position = Vector2(640, 1250);
-        special->transform.scale = Vector2(5, 5);
-
-        special->AddComponent(new TextRenderer(special, "Special thanks to TTKL for emotional support", SDL_Color{255, 255, 255, 255}, 6, "Assets/Fonts/arial.ttf"));
-        special->AddComponent(new Scroll(special, Vector2(0, -1), 1));
-
         GameObject *didYou = new GameObject("DidYou");
         didYou->transform.position = Vector2(640, 2000);
         didYou->transform.scale = Vector2(5, 5);
@@ -412,7 +405,6 @@ void Game::objectInit() {
 
         GameObjectManager::GetInstance()->AddGameObject(aboutLabel);
         GameObjectManager::GetInstance()->AddGameObject(aboutText);
-        GameObjectManager::GetInstance()->AddGameObject(special);
         GameObjectManager::GetInstance()->AddGameObject(didYou);
     });
     SceneManager::GetInstance()->AddScene(aboutScene);
