@@ -563,6 +563,10 @@ void Game::objectInit() {
 
         player->AddComponent(new CoinCollector(player));
 
+        player->GetComponent<CoinCollector>()->OnCoinCollect.addHandler([]() {
+            Game::coin += 1;
+        });
+
 #pragma endregion
 
 #pragma region Gun Setup
@@ -803,6 +807,8 @@ void Game::objectInit() {
                 std::cout << "Coin collected" << std::endl;
                 std::cout << player->GetComponent<CoinCollector>()->GetCoinCount() << std::endl;
                 GameObjectManager::GetInstance()->RemoveGameObject(coin->GetName());
+
+                
             };
 
             coin->AddComponent(new PowerUp(coin, CollisionMatrix::PLAYER, CollectCoin, 0));
@@ -818,28 +824,46 @@ void Game::objectInit() {
             return coin;
         };
 
-        GameObjectManager::GetInstance()->AddGameObject(CreateCoin(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 4)
-        ));
+        auto CreateCrown = [this, player](Vector2 position){
+            GameObject *crown = new GameObject("Crown" + std::to_string(spawnID++));
+            crown->layer = CollisionMatrix::POWERUP;
 
-        GameObjectManager::GetInstance()->AddGameObject(CreateCoin(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(22, 4)
-        ));
+            crown->transform.position = position;
+            crown->transform.scale = Vector2(2, 2);
 
-        GameObjectManager::GetInstance()->AddGameObject(CreateCoin(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(26, 4)
-        ));
+            crown->AddComponent(new SpriteRenderer(crown, Vector2(56, 56), 5, LoadSpriteSheet("Assets/Sprites/Powerup/crown.png")));
+            crown->AddComponent(new Rigidbody2D(crown, 1, 0.025, 0, 1.0));
 
+            // Trigger
+            crown->AddComponent(new BoxCollider2D(crown, Vector2(0, 0),
+                Vector2(56 * crown->transform.scale.x, 56 * crown->transform.scale.y), true));
+            
+            auto CollectCrown = [this, crown](GameObject *player){
+                Game::state = GAMEOVER;
+            };
+
+            crown->AddComponent(new PowerUp(crown, CollisionMatrix::PLAYER, CollectCrown, 0));
+
+            // Physic
+            BoxCollider2D *physCol = dynamic_cast<BoxCollider2D *>(
+                crown->AddComponent(new BoxCollider2D(crown, Vector2(0, 0),
+                    Vector2(56 * crown->transform.scale.x, 56 * crown->transform.scale.y), false))
+            );
+
+            physCol->layer = CollisionMatrix::PARTICLE;
+
+            return crown;
+        };
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
             tilemap->GetComponent<Tilemap>()->GetPositionFromTile(15, 8), CreateHeal
             // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
         ));
 
-        GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
-            // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
-        ));
+        // GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
+        //     tilemap->GetComponent<Tilemap>()->GetPositionFromTile(36, 4), CreateHeal
+        //     // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateHeal
+        // ));
 
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
@@ -848,7 +872,7 @@ void Game::objectInit() {
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreatePowerUpBox(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(41, 3), CreateBootUpgrade
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(42, 3), CreateBootUpgrade
             // tilemap->GetComponent<Tilemap>()->GetPositionFromTile(88, 13), CreateBootUpgrade
         ));
 
@@ -1176,7 +1200,7 @@ void Game::objectInit() {
 #pragma endregion
 
 #pragma region Moai setup
-        auto CreateMoai = [player, CreateMelee, CreateRanged, CreateMoaiProjectile, enemyHurtParticle](Vector2 position){
+        auto CreateMoai = [player, CreateCrown, CreateMelee, CreateRanged, CreateMoaiProjectile, enemyHurtParticle](Vector2 position){
             GameObject *moai = new GameObject("Moai" + std::to_string(spawnID++));
             moai->layer = CollisionMatrix::ENEMY;
             moai->transform.position = position;
@@ -1187,7 +1211,7 @@ void Game::objectInit() {
             moai->AddComponent(new Animator(moai,
             {
                 AnimationClip("Idle", "Assets/Sprites/Enemy/moai_idle.png", Vector2(87, 112), 1000, true, 2.0, 0, 3),
-                AnimationClip("Attack", "Assets/Sprites/Enemy/moai_charge.png", Vector2(87, 112), 5000, false, 1.0, 0, 3),
+                AnimationClip("Attack", "Assets/Sprites/Enemy/moai_charge.png", Vector2(87, 112), 2000, false, 1.0, 0, 3),
             }));
             moai->GetComponent<Animator>()->Play("Idle");
 
@@ -1214,6 +1238,8 @@ void Game::objectInit() {
             moai_hitbox->layer = CollisionMatrix::E_PROJECTILE;
 
             moai->AddComponent(new HPController(moai, MOAI_HP, 0));
+
+            moai->GetComponent<HPController>()->AddDropFunction(CreateCrown);
 
             ParticleSystem *enemyHurtParticleSystem = dynamic_cast<ParticleSystem *>(
                 moai->AddComponent(new ParticleSystem(moai, enemyHurtParticle, 50, 2000, Vector2(0, -1), 20, 360)));
@@ -1242,7 +1268,7 @@ void Game::objectInit() {
 
 #pragma region UI
         GameObject *coinUI = new GameObject("CoinUI");
-        coinUI->transform.position = Vector2(0, 0);
+        coinUI->transform.position = Game::CAMERA->transform.position + Vector2(- WIDTH / 2 + 100, - HEIGHT / 2 + 20);
         coinUI->transform.scale = Vector2(2, 2);
 
         //Dummy sprite
@@ -1252,7 +1278,6 @@ void Game::objectInit() {
         player->GetComponent<CoinCollector>()->OnCoinCollect.addHandler([coinUI, player](){
             int coinCount = player->GetComponent<CoinCollector>()->GetCoinCount();
             coinUI->GetComponent<TextRenderer>()->SetText("Coins: " + std::to_string(coinCount));
-            Game::coin = coinCount;
         });
 
         coinUI->AddComponent(new BindToCamera(coinUI, Vector2(WIDTH / 2 - 300, - HEIGHT / 2 + 20)));
@@ -1306,7 +1331,7 @@ void Game::objectInit() {
         GameObject *score = new GameObject("Score");
         score->transform.position = Vector2(640, 300);
 
-        score->AddComponent(new TextRenderer(score, "Coin: " + Game::coin, SDL_Color{255, 255, 255, 255}, 40, "Assets/Fonts/arial.ttf"));
+        score->AddComponent(new TextRenderer(score, "Coin: " + std::to_string(Game::coin), SDL_Color{255, 255, 255, 255}, 40, "Assets/Fonts/arial.ttf"));
         GameObjectManager::GetInstance()->AddGameObject(score);
 
         GameObject *quitButton = new GameObject("QuitButton");
