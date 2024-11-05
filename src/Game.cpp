@@ -138,7 +138,7 @@ void Game::objectInit() {
     menuScene->AssignLogic([menuScene, this](){
         Game::state = MENU;
         GameObject *title = new GameObject("Title");
-        title->transform.position = Vector2(640, 200);
+        title->transform.position = Vector2(640, 150);
         title->transform.scale = Vector2(3, 3);
 
         title->AddComponent(new SpriteRenderer(title, Vector2(128, 128), 10, LoadSpriteSheet("Assets/Sprites/Menu/alien_evil_name.png")));
@@ -147,7 +147,7 @@ void Game::objectInit() {
 
 #pragma region button
         GameObject *newGameButton = new GameObject("NewGameButton");
-        newGameButton->transform.position = Vector2(640, 400);
+        newGameButton->transform.position = Vector2(640, 350);
         newGameButton->transform.scale = Vector2(4, 4);
 
         newGameButton->AddComponent(new SpriteRenderer(newGameButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/NewGameButton.png")));
@@ -164,7 +164,7 @@ void Game::objectInit() {
         GameObjectManager::GetInstance()->AddGameObject(newGameButton);
 
         GameObject *optionButton = new GameObject("OptionButton");
-        optionButton->transform.position = Vector2(640, 500);
+        optionButton->transform.position = Vector2(640, 450);
         optionButton->transform.scale = Vector2(4, 4);
 
         optionButton->AddComponent(new SpriteRenderer(optionButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/OptionButton.png")));
@@ -180,8 +180,23 @@ void Game::objectInit() {
         });
         GameObjectManager::GetInstance()->AddGameObject(optionButton);
 
+        GameObject *aboutButton = new GameObject("AboutButton");
+        aboutButton->transform.position = Vector2(640, 550);
+        aboutButton->transform.scale = Vector2(4, 4);
+
+        aboutButton->AddComponent(new SpriteRenderer(aboutButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/AboutButton.png")));
+
+        aboutButton->AddComponent(new BoxCollider2D(aboutButton, Vector2(0, 0), 
+            Vector2(32 * aboutButton->transform.scale.x, 16 * aboutButton->transform.scale.y),
+        true));
+        aboutButton->AddComponent(new Button(aboutButton));
+        aboutButton->GetComponent<Button>()->AddOnClickHandler([menuScene, this]() {
+            Game::state = ABOUT;
+        });
+        GameObjectManager::GetInstance()->AddGameObject(aboutButton);
+
         GameObject *exitButton = new GameObject("ExitButton");
-        exitButton->transform.position = Vector2(640, 600);
+        exitButton->transform.position = Vector2(640, 650);
         exitButton->transform.scale = Vector2(4, 4);
 
         exitButton->AddComponent(new SpriteRenderer(exitButton, Vector2(32, 16), 10, LoadSpriteSheet("Assets/Sprites/Menu/ExitButton.png")));
@@ -336,6 +351,51 @@ void Game::objectInit() {
 
     });
     SceneManager::GetInstance()->AddScene(optionScene);
+
+    Scene *aboutScene = new Scene("About");
+    aboutScene->AssignLogic([aboutScene, this](){
+        Game::state = ABOUT;
+        GameObject *aboutLabel = new GameObject("AboutLabel");
+        aboutLabel->transform.position = Vector2(640, 200);
+        aboutLabel->transform.scale = Vector2(5, 5);
+
+        aboutLabel->AddComponent(new TextRenderer(aboutLabel, "About", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *aboutText = new GameObject("AboutText");
+        aboutText->transform.position = Vector2(640, 400);
+        aboutText->transform.scale = Vector2(5, 5);
+
+        aboutText->AddComponent(new TextRenderer(aboutText, "This is a game made by team 10", SDL_Color{255, 255, 255, 255}, 10, "Assets/Fonts/arial.ttf"));
+
+        GameObject *special = new GameObject("SpecialText");
+        special->transform.position = Vector2(640, 600);
+        special->transform.scale = Vector2(5, 5);
+
+        special->AddComponent(new TextRenderer(special, "Special thanks to TTKL for emotional support", SDL_Color{255, 255, 255, 255}, 6, "Assets/Fonts/arial.ttf"));
+
+        GameObject *quitButton = new GameObject("QuitButton");
+        quitButton->transform.scale = Vector2(2, 2);
+
+        quitButton->transform.position = Vector2(1280 - 32 * 2 / 2, 32 * 2 / 2);
+
+        quitButton->AddComponent(new SpriteRenderer(quitButton, Vector2(32, 32), 0, LoadSpriteSheet("Assets/Sprites/Menu/Quit_button.png")));
+
+        quitButton->AddComponent(new BoxCollider2D(quitButton, Vector2(0, 0), 
+            Vector2(32 * quitButton->transform.scale.x, 32 * quitButton->transform.scale.y)
+        ,true));
+
+        quitButton->AddComponent(new Button(quitButton));
+        quitButton->GetComponent<Button>()->AddOnClickHandler([this](){
+            Game::state = MENU;
+        });
+
+        GameObjectManager::GetInstance()->AddGameObject(quitButton);
+
+        GameObjectManager::GetInstance()->AddGameObject(aboutLabel);
+        GameObjectManager::GetInstance()->AddGameObject(aboutText);
+        GameObjectManager::GetInstance()->AddGameObject(special);
+    });
+    SceneManager::GetInstance()->AddScene(aboutScene);
 
 #ifndef MENU_DEBUG
     Scene *gameScene = new Scene("Game");
@@ -519,7 +579,7 @@ void Game::objectInit() {
             player->AddComponent(new Joystick(player, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT)));
 
         PlayerWeapon *shotgun = dynamic_cast<PlayerWeapon *>(
-            player->AddComponent(new PlayerWeapon(player, 40, 600, 1000, PLAYER_SHOTGUN_PELLET, 10, aimStick, shellDropPS, "Shotgun"))
+            player->AddComponent(new PlayerWeapon(player, 40, 600, 800, PLAYER_SHOTGUN_PELLET, 10, aimStick, shellDropPS, "Shotgun"))
         );
         shotgun->setSpawnFunction(CreateShell);
 
@@ -619,7 +679,7 @@ void Game::objectInit() {
             }));
             heal->GetComponent<Animator>()->Play("Idle");
 
-            heal->AddComponent(new Rigidbody2D(heal, 1, 0.025, 0, 1.0));
+            heal->AddComponent(new Rigidbody2D(heal, 0.8, 0.025, 0, 1.0));
 
             // Trigger
             heal->AddComponent(new BoxCollider2D(heal, Vector2(0, 0),
@@ -646,7 +706,7 @@ void Game::objectInit() {
             hookUpgrade->transform.scale = Vector2(2, 2);
 
             hookUpgrade->AddComponent(new SpriteRenderer(hookUpgrade, Vector2(19, 18), 5, LoadSpriteSheet("Assets/Sprites/Player/hook.png")));
-            hookUpgrade->AddComponent(new Rigidbody2D(hookUpgrade, 1, 0.025, 0, 1.0));
+            hookUpgrade->AddComponent(new Rigidbody2D(hookUpgrade, 0.8, 0.025, 0, 1.0));
 
             // Trigger
             hookUpgrade->AddComponent(new BoxCollider2D(hookUpgrade, Vector2(0, 0),
@@ -654,7 +714,7 @@ void Game::objectInit() {
             
             auto UnlockHook = [aimStick, CreateHook](GameObject *player){
                 PlayerWeapon *meatHook = dynamic_cast<PlayerWeapon *>(
-                    player->AddComponent(new PlayerWeapon(player, 30, 600, 3000, 1, 0, aimStick, nullptr, "HookShoot"))
+                    player->AddComponent(new PlayerWeapon(player, 30, 600, 2000, 1, 0, aimStick, nullptr, "HookShoot"))
                 );
                 meatHook->setSpawnFunction(CreateHook);
                 player->GetComponent<ArsenalManager>()->AddWeapon(meatHook, SDLK_2);
@@ -682,7 +742,7 @@ void Game::objectInit() {
             bootUpgrade->transform.scale = Vector2(3, 3);
 
             bootUpgrade->AddComponent(new SpriteRenderer(bootUpgrade, Vector2(13, 14), 5, LoadSpriteSheet("Assets/Sprites/Powerup/spikeboot.png")));
-            bootUpgrade->AddComponent(new Rigidbody2D(bootUpgrade, 1, 0.025, 0, 1.0));
+            bootUpgrade->AddComponent(new Rigidbody2D(bootUpgrade, 0.8, 0.025, 0, 1.0));
 
             // Trigger
             bootUpgrade->AddComponent(new BoxCollider2D(bootUpgrade, Vector2(0, 0),
@@ -714,7 +774,7 @@ void Game::objectInit() {
             shield->transform.scale = Vector2(2, 2);
 
             shield->AddComponent(new SpriteRenderer(shield, Vector2(18, 18), 5, LoadSpriteSheet("Assets/Sprites/Powerup/shield.png")));
-            shield->AddComponent(new Rigidbody2D(shield, 1, 0.025, 0, 1.0));
+            shield->AddComponent(new Rigidbody2D(shield, 0.8, 0.025, 0, 1.0));
 
             // Trigger
             shield->AddComponent(new BoxCollider2D(shield, Vector2(0, 0),
@@ -794,7 +854,7 @@ void Game::objectInit() {
                 AnimationClip("Idle", "Assets/Sprites/Powerup/coin.png", Vector2(14, 18), 1000, true, 1.0, 0, 3),
             }));
 
-            coin->AddComponent(new Rigidbody2D(coin, 1, 0.025, 0, 1.0));
+            coin->AddComponent(new Rigidbody2D(coin, 0.8, 0.025, 0, 1.0));
 
             // Trigger
             coin->AddComponent(new BoxCollider2D(coin, Vector2(0, 0),
@@ -1059,7 +1119,7 @@ void Game::objectInit() {
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreateMelee(
-            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(25, 7)
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(22, 7)
         ));
 
         GameObjectManager::GetInstance()->AddGameObject(CreateMelee(
@@ -1157,6 +1217,10 @@ void Game::objectInit() {
             
         GameObjectManager::GetInstance()->AddGameObject(CreateRanged(
             tilemap->GetComponent<Tilemap>()->GetPositionFromTile(24, 4)
+        ));
+
+        GameObjectManager::GetInstance()->AddGameObject(CreateRanged(
+            tilemap->GetComponent<Tilemap>()->GetPositionFromTile(64, 4)
         ));
 
 #pragma endregion
@@ -1268,7 +1332,6 @@ void Game::objectInit() {
 
 #pragma region UI
         GameObject *coinUI = new GameObject("CoinUI");
-        coinUI->transform.position = Game::CAMERA->transform.position + Vector2(- WIDTH / 2 + 50, - HEIGHT / 2 + 20);
         coinUI->transform.scale = Vector2(2, 2);
 
         //Dummy sprite
@@ -1280,7 +1343,7 @@ void Game::objectInit() {
             coinUI->GetComponent<TextRenderer>()->SetText("Coins: " + std::to_string(coinCount));
         });
 
-        coinUI->AddComponent(new BindToCamera(coinUI, Vector2(WIDTH / 2 - 300, - HEIGHT / 2 + 20)));
+        coinUI->AddComponent(new BindToCamera(coinUI, Vector2(WIDTH / 2 - 120, - HEIGHT / 2 + 20)));
 
         GameObjectManager::GetInstance()->AddGameObject(coinUI);
 
@@ -1386,6 +1449,12 @@ void Game::handleSceneChange() {
         if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "Option"){
             Game::CAMERA = nullptr;
             SceneManager::GetInstance()->LoadScene("Option");
+        }
+        break;
+    case ABOUT:
+        if (SceneManager::GetInstance()->GetCurrentScene()->GetName() != "About"){
+            Game::CAMERA = nullptr;
+            SceneManager::GetInstance()->LoadScene("About");
         }
         break;
     case GAME:
