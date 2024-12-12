@@ -13,6 +13,7 @@
 #include <iostream>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 SDL_Event Game::event;
 GameObject *Game::CAMERA = nullptr;
 int Game::coin = 0;
